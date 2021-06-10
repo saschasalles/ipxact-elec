@@ -13,8 +13,8 @@
   },
   "keywords": [],
   "author": {
-    "name": "Sascha Salles",
-    "email": "sascha.salles@icloud.com"
+    "name": "saschasalles",
+    "email": "sascha.salles@ynov.com"
   },
   "license": "MIT",
   "config": {
@@ -52,7 +52,7 @@
               "entryPoints": [
                 {
                   "html": "./src/index.html",
-                  "js": "./src/renderer.ts",
+                  "js": "./src/renderer.tsx",
                   "name": "main_window"
                 }
               ]
@@ -70,19 +70,31 @@
     "@electron-forge/maker-zip": "^6.0.0-beta.57",
     "@electron-forge/plugin-webpack": "6.0.0-beta.57",
     "@marshallofsound/webpack-asset-relocator-loader": "^0.5.0",
+    "@tailwindcss/postcss7-compat": "^2.1.4",
     "@typescript-eslint/eslint-plugin": "^4.0.1",
     "@typescript-eslint/parser": "^4.0.1",
+    "autoprefixer": "^10.2.6",
     "css-loader": "^5.0.0",
     "electron": "13.1.2",
     "eslint": "^7.6.0",
     "eslint-plugin-import": "^2.20.0",
     "fork-ts-checker-webpack-plugin": "^6.0.1",
     "node-loader": "^2.0.0",
+    "postcss": "^8.3.1",
+    "postcss-loader": "^5.3.0",
     "style-loader": "^2.0.0",
+    "tailwindcss": "^2.1.4",
     "ts-loader": "^9.2.2",
     "typescript": "^4.0.2"
   },
   "dependencies": {
-    "electron-squirrel-startup": "^1.0.0"
+    "@craco/craco": "^6.1.2",
+    "@headlessui/react": "^1.2.0",
+    "@types/react": "^17.0.11",
+    "@types/react-dom": "^17.0.7",
+    "electron-squirrel-startup": "^1.0.0",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
+    "react-hot-loader": "^4.13.0"
   }
 }
