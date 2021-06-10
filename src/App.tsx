@@ -1,6 +1,7 @@
 import { hot } from 'react-hot-loader';
 import * as React from 'react';
+import Main from './pages/main';
 
-const App = () => <div className="absolute inset-0 bg-gray-300 text-center h-full flex flex-col justify justify-center">TAILWIND = ❤</div>
+const App = () => <Main />
 
 export default hot(module)(App);
