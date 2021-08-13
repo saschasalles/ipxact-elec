@@ -10,12 +10,16 @@
     "outDir": "dist",
     "moduleResolution": "node",
     "resolveJsonModule": true,
+    "typeRoots": [
+      "node_modules/@types"
+    ],
     "paths": {
-      "*": ["node_modules/*"]
+      "*": ["node_modules/*"],
     },
-    "jsx": "react"
+    "jsx": "react",
+    "target": "es5"
   },
   "include": [
     "src/**/*"
-  ]
+, "preload.js"  ]
 }

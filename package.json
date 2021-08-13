@@ -1,8 +1,8 @@
 {
-  "name": "ipxact-elec",
-  "productName": "ipxact-elec",
+  "name": "xactron",
+  "productName": "Xactron",
   "version": "1.0.0",
-  "description": "My Electron application description",
+  "description": "Thales Ipxact Tool Electron Version (aka v3) ",
   "main": ".webpack/main",
   "scripts": {
     "start": "electron-forge start",
@@ -19,12 +19,11 @@
   "license": "MIT",
   "config": {
     "forge": {
-      "packagerConfig": {},
       "makers": [
         {
           "name": "@electron-forge/maker-squirrel",
           "config": {
-            "name": "ipxact_elec"
+            "name": "xactron"
           }
         },
         {
@@ -68,14 +67,19 @@
     "@electron-forge/maker-rpm": "^6.0.0-beta.57",
     "@electron-forge/maker-squirrel": "^6.0.0-beta.57",
     "@electron-forge/maker-zip": "^6.0.0-beta.57",
+    "@electron-forge/plugin-auto-unpack-natives": "^6.0.0-beta.57",
     "@electron-forge/plugin-webpack": "6.0.0-beta.57",
     "@marshallofsound/webpack-asset-relocator-loader": "^0.5.0",
     "@tailwindcss/postcss7-compat": "^2.1.4",
+    "@types/node": "^16.3.3",
     "@typescript-eslint/eslint-plugin": "^4.26.1",
     "@typescript-eslint/parser": "^4.26.1",
     "autoprefixer": "^10.2.6",
+    "copy-webpack-plugin": "^9.0.0",
     "css-loader": "^5.0.0",
     "electron": "13.1.2",
+    "electron-devtools-installer": "^3.2.0",
+    "electron-rebuild": "^2.3.5",
     "eslint": "^7.28.0",
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-import": "^2.20.0",
@@ -86,6 +90,7 @@
     "postcss": "^8.3.1",
     "postcss-loader": "^5.3.0",
     "prettier": "^2.3.1",
+    "redux-devtools-extension": "^2.13.9",
     "style-loader": "^2.0.0",
     "stylelint-config-recommended": "^5.0.0",
     "tailwindcss": "^2.1.4",
@@ -95,12 +100,41 @@
   "dependencies": {
     "@craco/craco": "^6.1.2",
     "@headlessui/react": "^1.2.0",
+    "@heroicons/react": "^1.0.1",
+    "@hookform/resolvers": "^2.6.0",
     "@hot-loader/react-dom": "^17.0.1",
-    "@types/react": "^17.0.11",
-    "@types/react-dom": "^17.0.7",
+    "@reduxjs/toolkit": "^1.6.0",
+    "@tailwindcss/forms": "^0.3.3",
+    "@treverix/custom-electron-titlebar": "^4.1.7",
+    "@types/react": "^17.0.14",
+    "@types/react-dom": "^17.0.9",
+    "@types/react-redux": "^7.1.16",
+    "@types/react-router-dom": "^5.1.7",
+    "@types/uuid": "^8.3.0",
+    "@vercel/webpack-asset-relocator-loader": "^1.6.0",
+    "browserify-fs": "^1.0.0",
+    "child_process": "^1.0.2",
+    "custom-electron-titlebar": "^3.2.7",
+    "electron-context-menu": "^3.1.1",
+    "electron-icon-builder": "^2.0.1",
     "electron-squirrel-startup": "^1.0.0",
+    "electron_packager": "^2.0.8",
+    "framer-motion": "^4.1.17",
+    "heroicons": "^1.0.1",
+    "is-electron": "^2.2.0",
+    "os-browserify": "^0.3.0",
+    "path-browserify": "^1.0.1",
+    "python-shell": "^3.0.0",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
-    "react-hot-loader": "^4.13.0"
+    "react-hook-form": "^7.9.0",
+    "react-hot-loader": "^4.13.0",
+    "react-onclickoutside": "^6.11.2",
+    "react-redux": "^7.2.4",
+    "smoke-effect-react": "^1.0.5",
+    "stream-browserify": "^3.0.0",
+    "util": "^0.12.4",
+    "uuid": "^8.3.2",
+    "yup": "^0.32.9"
   }
 }

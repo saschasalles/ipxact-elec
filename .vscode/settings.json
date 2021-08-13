@@ -1,5 +1,6 @@
 {
     "editor.formatOnSave": true,    
     "css.validate": false, // Disable css built-in lint
-    "stylelint.enable": true, // Enable sytlelint
+    "stylelint.enable": true,
+    "files.autoSaveDelay": 200, // Enable sytlelint
 }
