@@ -1,0 +1,2 @@
+ipyxact==0.2.4
+PyYAML==5.4.1
