@@ -1,6 +1,7 @@
 {
-    "editor.formatOnSave": true,    
-    "css.validate": false, // Disable css built-in lint
-    "stylelint.enable": true,
-    "files.autoSaveDelay": 200, // Enable sytlelint
+  "editor.formatOnSave": true,
+  "css.validate": false, // Disable css built-in lint
+  "stylelint.enable": true,
+  "files.autoSaveDelay": 200,
+  "cSpell.words": ["regs"] // Enable sytlelint
 }

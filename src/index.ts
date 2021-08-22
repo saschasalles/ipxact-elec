@@ -183,7 +183,7 @@ const createMenu = (mainWindow: BrowserWindow): Electron.MenuItemConstructorOpti
           label: 'Save',
           accelerator: isMac ? 'Cmd+S' : 'Ctrl+S',
           click: () => {
-            parse({}, true);
+            mainWindow.webContents.send("mm-save-project", 'save');
           },
         },
         {
@@ -269,19 +269,22 @@ ipcMain.on('parse-xml', async (event, args) => {
   parse(options, false);
 });
 
+ipcMain.on('save-project', async (event, args) => {
+  let options = {
+    args: [args.projectReducer.projects[0]._filePath, args]
+  }
+
+  parse(options, true)
+})
+
 
 const parse = (options: {}, write: boolean) => {
-  let cal = () => save()
-  let opts = write ? {args: [cal()[0], cal()[1]]} : options
-
-  console.log("OPT", write, opts)
-  PythonShell.run('./src/python/parser.py', opts, function (err, results) {
+  PythonShell.run('./src/python/parser.py', options, function (err, results) {
     if (err) throw err;
     if (write == false) {
       const strRes = results.toString();
       try {
         const data = JSON.parse(strRes);
-        console.log(data);
         BrowserWindow.getFocusedWindow().webContents.send('add-parsed-items', data);
       } catch (error) {
         console.log(error);

@@ -12,8 +12,6 @@ import { addRegister } from '../store/registerActions';
 import { addField as addFieldAction } from '../store/fieldActions';
 import { PythonShell } from 'python-shell';
 
-import { string } from 'yup/lib/locale';
-
 
 export const fetchItems = (data: any): Project => {
   const project = new Project(
@@ -93,8 +91,7 @@ export const fetchItems = (data: any): Project => {
 };
 
 
-export const save = (): string[] => {
-  const currentState = store.getState()
+export const save = (currentState: any): string[] => {
   const storeProjects = currentState.projectReducer.projects;
   const storeFuncs = currentState.functionReducer.addressSpaces;
   const storeBlocks = currentState.blockReducer.blocks;
@@ -110,9 +107,7 @@ export const save = (): string[] => {
     fields: storeFields,
     evs: storeEVS,
   }; 
-  console.log("PROJECT", data.project[0])
 
   const stringified = JSON.stringify(data);
   return [data.project[0], stringified]
 };
- 

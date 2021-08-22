@@ -15,12 +15,13 @@ import { AddressSpace } from './models/address-space';
 import { Register } from './models/register';
 import { Field } from './models/field';
 import { Project } from './models/project';
-import { Access } from "./models/access"
+import { Access } from './models/access';
 import { useDispatch } from 'react-redux';
 import { Dispatch } from 'redux';
 import { useAppSelector } from './hooks';
-import { ResetAppAction } from "./store/store"
-import { fetchItems } from "./helpers/ipxact-helper"
+import { ResetAppAction } from './store/store';
+import { fetchItems } from './helpers/ipxact-helper';
+import { store } from './store/store';
 
 const electron = window.require('electron');
 
@@ -29,27 +30,6 @@ const App = () => {
   const [path, setPath] = useState(['']);
   const [createModal, setCreateModal] = useState(false);
   const dispatch: Dispatch<any> = useDispatch();
-
-  const addFunctionAction = useCallback(
-    (addressSpace: AddressSpace) => dispatch(addFunction(addressSpace)),
-    [dispatch, addFunction],
-  );
-
-  const addRegisterAction = useCallback(
-    (register: Register) => dispatch(addRegister(register)),
-    [dispatch, addRegister],
-  );
-
-  const addFieldAction = useCallback(
-    (field: Field) => dispatch(addField(field)),
-    [dispatch, addField],
-  );
-
-  const addProjectAction = useCallback(
-    (project: Project) => dispatch(addProject(project)),
-    [dispatch, addProject],
-  );
-
 
   const handleOpenFile = () => {
     const dialog = electron.remote.dialog;
@@ -78,7 +58,13 @@ const App = () => {
     menuItemsEnabler(false);
     setPath(['']);
     setElectronTitle('Xactron');
-    dispatch(ResetAppAction)
+    dispatch(ResetAppAction);
+  };
+
+  const handleSaveFile = () => {
+    const state = store.getState()
+    console.log("RENDERED", state);
+    electron.ipcRenderer.send('save-project', state);
   };
 
   useEffect(() => {
@@ -94,11 +80,15 @@ const App = () => {
       handleCreateFile();
     });
 
+    electron.ipcRenderer.on('mm-save-project', (event, arg) => {
+      handleSaveFile();
+    });
+
     electron.ipcRenderer.on('add-parsed-items', function (evt, data) {
       setEngineMode(true);
-      menuItemsEnabler(true)
-      const project = fetchItems(data)
-      setElectronTitle(`Xactron - ${project.projectName} - ${project.filePath}`)
+      menuItemsEnabler(true);
+      const project = fetchItems(data);
+      setElectronTitle(`Xactron - ${project.projectName} - ${project.filePath}`);
     });
   }, []);
   //
