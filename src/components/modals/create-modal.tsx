@@ -8,7 +8,6 @@ import { addProject, updateProject } from '../../store/projectActions';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { Project } from '../../models/project';
-import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { menuItemsEnabler, setElectronTitle } from '../../helpers/electron-helper';
 const electron = window.require('electron');
@@ -17,6 +16,8 @@ type CreateModalProps = {
   open: boolean;
   setOpen: (open: boolean) => void;
   setEngine: (open: boolean) => void;
+  editMode: boolean;
+  projectToEdit?: Project;
 };
 
 interface ICreateFormInputs {
@@ -66,8 +67,27 @@ const CreateModal = (props: CreateModalProps) => {
     resolver: yupResolver(schema),
   });
 
+  useEffect(() => {
+    console.log(props.projectToEdit)
+  }, [])
+
   const onSubmit = (data: ICreateFormInputs) => {
-    createFile(data);
+    props.editMode ? updateProj(data) : createFile(data);
+  };
+
+  const updateProj = (data: ICreateFormInputs): void | Promise<void> => {
+    menuItemsEnabler(true);
+    const projectToEdit = props.projectToEdit;
+    projectToEdit.fileName = data.fileName;
+    projectToEdit.addressBits = data.addressBits;
+    projectToEdit.projectName = data.projectName;
+    projectToEdit.company = data.company;
+    projectToEdit.description = data.description;
+    projectToEdit.version = data.version;
+    updateProjectAction(projectToEdit);
+    setElectronTitle(`Xactron - ${projectToEdit.projectName} - ${projectToEdit.filePath}`);
+    props.setOpen(false);
+    reset();
   };
 
   const createFile = (data: ICreateFormInputs): void | Promise<void> => {
@@ -92,13 +112,12 @@ const CreateModal = (props: CreateModalProps) => {
             data.description,
             data.version,
           );
-          console.log(newProject);
           addProjectAction(newProject);
           props.setOpen(false);
           props.setEngine(false);
           reset();
-          setElectronTitle(`Xactron - ${newProject.projectName} - ${newProject.filePath}`)
-          menuItemsEnabler(true)
+          setElectronTitle(`Xactron - ${newProject.projectName} - ${newProject.filePath}`);
+          menuItemsEnabler(true);
         }
       })
       .catch((err) => {
@@ -106,8 +125,6 @@ const CreateModal = (props: CreateModalProps) => {
         throw err;
       });
   };
-
-  
 
   return (
     <Transition.Root show={props.open} as={Fragment}>
@@ -129,7 +146,7 @@ const CreateModal = (props: CreateModalProps) => {
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <Dialog.Overlay className="fixed inset-0 bg-blueGray-800 bg-opacity-25 transition-opacity" />
+            <Dialog.Overlay className="fixed inset-0 bg-transparent bg-opacity-25 transition-opacity" />
           </Transition.Child>
 
           <Transition.Child
@@ -141,11 +158,11 @@ const CreateModal = (props: CreateModalProps) => {
             leaveFrom="opacity-100 translate-y-0 sm:scale-100"
             leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
           >
-            <div className="inline-block align-middle backdrop-filter backdrop-blur-2xl backdrop-contrast-75 backdrop-brightness-100  rounded-3xl py-6 text-left overflow-hidden transform transition-all my-8 max-w-lg w-full px-6">
+            <div className="inline-block align-middle backdrop-filter backdrop-blur-2xl backdrop-contrast-75 backdrop-brightness-200  rounded-3xl py-6 text-left overflow-hidden transform transition-all my-8 max-w-lg w-full px-6">
               <div className="hidden sm:block absolute top-0 right-0 pt-4 pr-4">
                 <button
                   type="button"
-                  className="bg-blueGray-600 p-0.5 rounded-full text-gray-400 hover:text-gray-200 focus:outline-none"
+                  className="bg-blueGray-600 dark:bg-gray-600 p-0.5 rounded-full text-gray-400 hover:text-gray-200 focus:outline-none"
                   onClick={() => props.setOpen(false)}
                 >
                   <span className="sr-only">Close</span>
@@ -154,7 +171,7 @@ const CreateModal = (props: CreateModalProps) => {
               </div>
               <div className="text-left px-3 w-full">
                 <Dialog.Title as="h3" className="text-xl leading-6 text-center font-medium text-white">
-                  New Project
+                  {props.editMode ? "Edit" : "New"} Project
                 </Dialog.Title>
 
                 <div className="mt-1">
@@ -169,7 +186,8 @@ const CreateModal = (props: CreateModalProps) => {
                           {...register('fileName', { required: true })}
                           type="text"
                           placeholder="Ex: myfile"
-                          className="appearance-none block w-full px-3 py-2 border bg-blueGray-600 border-blueGray-600 text-white rounded-lg placeholder-blueGray-400 focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm"
+                          defaultValue={props.editMode ? props.projectToEdit?.fileName : ""}
+                          className="appearance-none block w-full px-3 py-2 border bg-blueGray-600 border-blueGray-600 dark:bg-gray-700 dark:border-transparent dark:placeholder-gray-300  text-white rounded-lg placeholder-blueGray-400 focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm"
                         />
                       </div>
                     </div>
@@ -186,7 +204,8 @@ const CreateModal = (props: CreateModalProps) => {
                           {...register('addressBits', { required: true })}
                           type="text"
                           placeholder="32"
-                          className="appearance-none block w-full px-3 py-2 border bg-blueGray-600 border-blueGray-600 text-white rounded-lg placeholder-blueGray-400 focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm"
+                          defaultValue={props.editMode ? props.projectToEdit?.addressBits : ""}
+                          className="appearance-none block w-full px-3 py-2 border bg-blueGray-600 border-blueGray-600 dark:bg-gray-700 dark:border-transparent dark:placeholder-gray-300  text-white rounded-lg placeholder-blueGray-400 focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm"
                         />
                       </div>
                     </div>
@@ -200,7 +219,7 @@ const CreateModal = (props: CreateModalProps) => {
                         <select
                           {...register('company')}
                           className={
-                            'mt-1 py-2 block w-full pl-3 pr-6 text-base border bg-blueGray-600 border-blueGray-600 text-white rounded-lg placeholder-blueGray-400 focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm'
+                            'mt-1 py-2 block w-full pl-3 pr-6 text-base border bg-blueGray-600 border-blueGray-600 text-white rounded-lg placeholder-blueGray-400 dark:bg-gray-700 dark:border-transparent dark:placeholder-gray-300  focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm'
                           }
                         >
                           <option value="Thales DMS">Thales DMS</option>
@@ -221,7 +240,8 @@ const CreateModal = (props: CreateModalProps) => {
                         <input
                           {...register('projectName', { required: true })}
                           placeholder="project_name"
-                          className="appearance-none mt-1 py-2 block w-full pl-3 pr-6 text-base border-2 bg-blueGray-600 border-blueGray-600 text-white rounded-lg placeholder-blueGray-400 focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm"
+                          defaultValue={props.editMode ? props.projectToEdit?.projectName : ""}
+                          className="appearance-none mt-1 py-2 block w-full pl-3 pr-6 text-base border-2 bg-blueGray-600 border-blueGray-600 dark:bg-gray-700 dark:border-transparent dark:placeholder-gray-300  text-white rounded-lg placeholder-blueGray-400 focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm"
                         />
                       </div>
                     </div>
@@ -237,7 +257,8 @@ const CreateModal = (props: CreateModalProps) => {
                             required: false,
                           })}
                           placeholder="Description"
-                          className="appearance-none block w-full px-3 py-2 max-h-28 disabled:opacity-75 border bg-blueGray-600 border-blueGray-600 text-white rounded-lg placeholder-blueGray-400 focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm"
+                          defaultValue={props.editMode ? props.projectToEdit?.description : ""}
+                          className="appearance-none block w-full px-3 py-2 max-h-28 disabled:opacity-75 border bg-blueGray-600 border-blueGray-600 dark:bg-gray-700 dark:border-transparent dark:placeholder-gray-300  text-white rounded-lg placeholder-blueGray-400 focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm"
                         />
                       </div>
                     </div>
@@ -252,7 +273,8 @@ const CreateModal = (props: CreateModalProps) => {
                           {...register('version', { required: true })}
                           type="text"
                           placeholder="1.0"
-                          className="appearance-none block w-full px-3 py-2 border bg-blueGray-600 border-blueGray-600 text-white rounded-lg placeholder-blueGray-400 focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm"
+                          defaultValue={props.editMode ? props.projectToEdit?.version : ""}
+                          className="appearance-none block w-full px-3 py-2 border bg-blueGray-600 border-blueGray-600 dark:bg-gray-700 dark:border-transparent dark:placeholder-gray-300  text-white rounded-lg placeholder-blueGray-400 focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm"
                         />
                       </div>
                     </div>
@@ -261,9 +283,9 @@ const CreateModal = (props: CreateModalProps) => {
                       <div>
                         <button
                           type="submit"
-                          className={`w-full inline-flex justify-center rounded-lg px-4 py-2 bg-blueGray-500 bg-opacity-50 text-base font-medium text-white active:bg-opacity-50 duration-300 transform-gpu active:scale-95 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm`}
+                          className={`w-full inline-flex justify-center rounded-lg px-4 py-2 bg-blueGray-400 dark:bg-emerald-500 bg-opacity-50 text-base font-medium text-white active:bg-opacity-50 duration-300 transform-gpu active:scale-95 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm`}
                         >
-                          Create
+                          {props.editMode ? "Edit" : "Create"}
                         </button>
                       </div>
                     </div>

@@ -50,6 +50,8 @@ export const EnginePage = () => {
   const [funcToEdit, setFuncToEdit] = useState(null);
   const [blockToEdit, setBlockToEdit] = useState(null);
 
+  const ref = React.useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     let newMappingData = Array<MappingTableRowData>();
 
@@ -123,6 +125,7 @@ export const EnginePage = () => {
       e.preventDefault();
     });
   }, []);
+
   // MAPPING TABLE
 
   const handleMappingRowClick = (rowData: MappingTableRowData) => {
@@ -177,11 +180,11 @@ export const EnginePage = () => {
       electron.ipcRenderer.send('show-bk-context-menu');
     }
 
-    electron.ipcRenderer.on('cm-open-reg', (e, command) => {
+    electron.ipcRenderer.once('cm-open-reg', (e, command) => {
       handleMappingRowClick(rowData);
     });
 
-    electron.ipcRenderer.on('cm-delete-reg', (e, command) => {
+    electron.ipcRenderer.once('cm-delete-reg', (e, command) => {
       setConfirmModalData({
         type: 'Register',
         action: () => {
@@ -195,17 +198,17 @@ export const EnginePage = () => {
       setConfirmModal(true);
     });
 
-    electron.ipcRenderer.on('cm-edit-reg', (e, command) => {
+    electron.ipcRenderer.once('cm-edit-reg', (e, command) => {
       setRegisterToEdit(rowData.registerId);
       setRegModal([true, true]);
     });
 
-    electron.ipcRenderer.on('cm-edit-func', (e, command) => {
+    electron.ipcRenderer.once('cm-edit-func', (e, command) => {
       setFuncToEdit(rowData.functionId);
       setFuncModal([true, true]);
     });
 
-    electron.ipcRenderer.on('cm-delete-func', (e, command) => {
+    electron.ipcRenderer.once('cm-delete-func', (e, command) => {
       setConfirmModalData({
         type: 'Function',
         action: () => {
@@ -219,12 +222,12 @@ export const EnginePage = () => {
       setConfirmModal(true);
     });
 
-    electron.ipcRenderer.on('cm-open-bk', (e, command) => {
+    electron.ipcRenderer.once('cm-open-bk', (e, command) => {
       setBlockToEdit(rowData.blockId);
       setBlockModal([true, true]);
     });
 
-    electron.ipcRenderer.on('cm-delete-bk', (e, command) => {
+    electron.ipcRenderer.once('cm-delete-bk', (e, command) => {
       setConfirmModalData({
         type: 'Block',
         action: () => {

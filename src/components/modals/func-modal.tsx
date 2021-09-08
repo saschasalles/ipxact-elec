@@ -49,7 +49,10 @@ const FuncModal = (props: FuncModalProps) => {
       .string()
       .typeError('Base address is required')
       .matches(RegExp('0[xX][0-9a-fA-F]+'), 'Base address must be an hexadecimal value')
-      .required('Base address is required'),
+      .required('Base address is required')
+      .test('Base Address already exist', 'Base Address already exist', (value) =>
+        funcs.filter((func) => func.baseAddress === parseInt(value, 16) && func.id !== funcID).length > 0 ? false : true,
+      ),
     size: yup
       .number()
       .typeError('Size is required')

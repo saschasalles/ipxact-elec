@@ -9,6 +9,8 @@ type ConfirmDeleteModalProps = {
   title: string;
   message: string;
   type: string;
+  closeMode?: boolean;
+  actionClose?: () => void;
 };
 
 const ConfirmDeleteModal = (props: ConfirmDeleteModalProps) => {
@@ -70,13 +72,25 @@ const ConfirmDeleteModal = (props: ConfirmDeleteModalProps) => {
                 </div>
               </div>
               <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+                {props.closeMode && (
+                  <button
+                    type="button"
+                    className="w-full inline-flex justify-center rounded-lg shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-400 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm"
+                    onClick={() => props.actionClose()}
+                  >
+                    Close anyway
+                  </button>
+                )}
                 <button
                   type="button"
-                  className="w-full inline-flex justify-center rounded-lg shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-400 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm"
+                  className={`w-full inline-flex justify-center rounded-lg shadow-sm px-4 py-2 ${
+                    props.closeMode ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-red-600 hover:bg-red-400'
+                  } text-base font-medium text-white focus:outline-none sm:ml-3 sm:w-auto sm:text-sm`}
                   onClick={() => props.action()}
                 >
-                  Delete
+                  {props.closeMode ? 'Save & Close' : 'Delete'}
                 </button>
+                
                 <button
                   type="button"
                   className="mt-3 w-full inline-flex justify-center rounded-lg bg-blueGray-700 dark:bg-gray-800 px-4 py-2 text-base font-medium text-gray-200 hover:text-gray-50 focus:outline-none sm:mt-0 sm:w-auto sm:text-sm"

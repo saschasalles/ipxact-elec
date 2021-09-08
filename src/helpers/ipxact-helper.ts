@@ -1,6 +1,7 @@
 import { store } from '../store/store';
 import { Field } from '../models/field';
 import { Register } from '../models/register';
+import { Block } from '../models/block';
 import { EnumeratedValue } from '../models/enumerated-value';
 import { Project } from '../models/project';
 import { Access } from '../models/access';
@@ -11,7 +12,6 @@ import { addFunction as addFunctionAction } from '../store/functionActions';
 import { addRegister } from '../store/registerActions';
 import { addField as addFieldAction } from '../store/fieldActions';
 import { PythonShell } from 'python-shell';
-
 
 export const fetchItems = (data: any): Project => {
   const project = new Project(
@@ -82,32 +82,19 @@ export const fetchItems = (data: any): Project => {
         Register.add(fetchedReg);
       });
     }
+    console.log("fetchable", data.blocks)
+    const fetchedBks = data.blocks.filter((bk: any) => bk.parentFuncId === fetchedFunc.id);
+    if (fetchedBks != null) {
+      fetchedBks.forEach((bk: any) => {
+        const fetchedBk = new Block(bk.id, bk.name, bk.baseAddress, bk.size, bk.width, bk.description, bk.parentFuncId);
+        fetchedFunc.blocks.push(fetchedBk.id);
+        Block.add(fetchedBk);
+      });
+    }
 
     store.dispatch(addFunctionAction(fetchedFunc));
   });
 
-  console.log(store.getState().projectReducer)
+  console.log(store.getState().projectReducer);
   return project;
-};
-
-
-export const save = (currentState: any): string[] => {
-  const storeProjects = currentState.projectReducer.projects;
-  const storeFuncs = currentState.functionReducer.addressSpaces;
-  const storeBlocks = currentState.blockReducer.blocks;
-  const storeRegs = currentState.registerReducer.registers;
-  const storeFields = currentState.fieldReducer.fields;
-  const storeEVS = currentState.enumeratedValueReducer.enumeratedValues;
-
-  const data = {
-    project: storeProjects,
-    funcs: storeFuncs,
-    blocks: storeBlocks,
-    regs: storeRegs,
-    fields: storeFields,
-    evs: storeEVS,
-  }; 
-
-  const stringified = JSON.stringify(data);
-  return [data.project[0], stringified]
 };

@@ -1,15 +1,10 @@
 import { app, BrowserWindow, Menu, ipcMain, remote } from 'electron';
-import installExtension, { REDUX_DEVTOOLS } from 'electron-devtools-installer';
 import { PythonShell } from 'python-shell';
-import { save } from './helpers/ipxact-helper';
-import { urlToHttpOptions } from 'url';
-import { store } from './store/store';
 
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
-  // eslint-disable-line global-require
   app.quit();
 }
 
@@ -33,7 +28,6 @@ const createWindow = (): BrowserWindow => {
   });
 
   mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
-  // Open the DevTools.
   mainWindow.webContents.openDevTools();
 
   mainWindow.on('close', function (e) {
@@ -123,7 +117,7 @@ ipcMain.on('show-bk-context-menu', (event) => {
   menu.popup({ window });
 });
 
-const createMenu = (mainWindow: BrowserWindow): Electron.MenuItemConstructorOptions[] => {
+const createMenu = (): Electron.MenuItemConstructorOptions[] => {
   const templateMenu: Electron.MenuItemConstructorOptions[] = [
     isMac && {
       label: 'Xactron',
@@ -134,7 +128,7 @@ const createMenu = (mainWindow: BrowserWindow): Electron.MenuItemConstructorOpti
           role: 'toggleDevTools',
         },
         {
-          label: 'Refresh',
+          label: 'Hot Reload',
           accelerator: isMac ? 'Cmd+R' : 'Ctrl+R',
           role: 'reload',
         },
@@ -162,8 +156,18 @@ const createMenu = (mainWindow: BrowserWindow): Electron.MenuItemConstructorOpti
           label: 'Open File...',
           accelerator: isMac ? 'Cmd+O' : 'Ctrl+O',
           click: () => {
-            mainWindow.webContents.send('mm-open-project', 'open');
+            BrowserWindow.getFocusedWindow().webContents.send('mm-open-project', 'open');
           },
+        },
+        {
+          label: 'Open Recent',
+          role: 'recentDocuments',
+          submenu: [
+            {
+              label: 'Clear Recent',
+              role: 'clearRecentDocuments',
+            },
+          ],
         },
         {
           id: 'menu-new-project',
@@ -171,7 +175,15 @@ const createMenu = (mainWindow: BrowserWindow): Electron.MenuItemConstructorOpti
           label: 'New Project',
           accelerator: isMac ? 'Cmd+N' : 'Ctrl+N',
           click: () => {
-            mainWindow.webContents.send('mm-new-project', 'new');
+            BrowserWindow.getFocusedWindow().webContents.send('mm-new-project', 'new');
+          },
+        },
+        {
+          id: 'menu-edit-project',
+          enabled: false,
+          label: 'Edit Project',
+          click: () => {
+            BrowserWindow.getFocusedWindow().webContents.send('mm-edit-project', 'edit');
           },
         },
         {
@@ -183,7 +195,7 @@ const createMenu = (mainWindow: BrowserWindow): Electron.MenuItemConstructorOpti
           label: 'Save',
           accelerator: isMac ? 'Cmd+S' : 'Ctrl+S',
           click: () => {
-            mainWindow.webContents.send("mm-save-project", 'save');
+            BrowserWindow.getFocusedWindow().webContents.send('mm-save-project', 'save');
           },
         },
         {
@@ -191,13 +203,16 @@ const createMenu = (mainWindow: BrowserWindow): Electron.MenuItemConstructorOpti
           enabled: false,
           label: 'Save As...',
           accelerator: isMac ? 'Cmd+Shift+S' : 'Ctrl+Shift+S',
+          click: () => {
+            BrowserWindow.getFocusedWindow().webContents.send('mm-save-as', 'save');
+          },
         },
         {
           id: 'menu-close',
           enabled: false,
           label: 'Close Project',
           click: () => {
-            mainWindow.webContents.send('mm-close-project', 'close');
+            BrowserWindow.getFocusedWindow().webContents.send('mm-close-project', 'close');
           },
         },
         {
@@ -240,15 +255,14 @@ const createMenu = (mainWindow: BrowserWindow): Electron.MenuItemConstructorOpti
   return templateMenu;
 };
 
-app.on('ready', () => {
-  let win = createWindow();
-  win.on("ready-to-show", () => {
-    let templateMenu = createMenu(win);
-    let menu = Menu.buildFromTemplate(templateMenu);
-    Menu.setApplicationMenu(menu);
-  })
-});
 
+// App life cycle binded events
+
+app.on('ready', () => {
+  let templateMenu = createMenu();
+  let menu = Menu.buildFromTemplate(templateMenu);
+  Menu.setApplicationMenu(menu);
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
@@ -262,6 +276,18 @@ app.on('activate', () => {
   }
 });
 
+app.on('open-file', (event, path) => {
+  console.log('PATH', path);
+  BrowserWindow
+    .getFocusedWindow()
+    .webContents
+    .send('open-recent-file', path);
+});
+
+
+
+// Signals going to front-end
+
 ipcMain.on('parse-xml', async (event, args) => {
   let options = {
     args: [args],
@@ -270,12 +296,23 @@ ipcMain.on('parse-xml', async (event, args) => {
 });
 
 ipcMain.on('save-project', async (event, args) => {
+  console.log(args[0]);
+  const stringified = JSON.stringify(args[0]);
   let options = {
-    args: [args.projectReducer.projects[0]._filePath, args]
-  }
+    args: [args[0].project._filePath, stringified],
+  };
 
-  parse(options, true)
-})
+  parse(options, true);
+});
+
+ipcMain.on('save-as', async (event, args) => {
+  const stringified = JSON.stringify(args[0]);
+  let options = {
+    args: [args[1], stringified],
+  };
+
+  parse(options, true);
+});
 
 
 const parse = (options: {}, write: boolean) => {
@@ -284,6 +321,7 @@ const parse = (options: {}, write: boolean) => {
     if (write == false) {
       const strRes = results.toString();
       try {
+        console.log(strRes);
         const data = JSON.parse(strRes);
         BrowserWindow.getFocusedWindow().webContents.send('add-parsed-items', data);
       } catch (error) {

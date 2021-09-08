@@ -45,21 +45,21 @@ const RegisterModal = (props: RegisterModalProps) => {
 
   const [selectedRegister, setSelectedRegister] = useState<Register>(null);
   const [regID, setRegID] = useState('empty');
-  const [funcID, setFuncID] = useState<string>(funcs != null && funcs.length > 0 && funcs[0].id);
+  const [funcID, setFuncID] = useState<string>((funcs != null && funcs.length > 0) && funcs[0].id);
   const schema = yup.object().shape({
     name: yup
       .string()
       .typeError('Register name is required')
       .matches(RegExp('^[a-zA-Z0-9_]*$'), 'Use only alphanumeric characters and the underscore')
       .required('Register name is required')
-      .test('Register name already exist', 'Register name already exist', (value) => regChecker(value, funcID, 'NAME')),
+      .test('Register name already exist', 'Register name already exist', (value) => regChecker(value, 'NAME')),
     localAddress: yup
       .string()
       .typeError('Local address is required')
       .matches(RegExp('0[xX][0-9a-fA-F]+'), 'Local address must be an hexadecimal value')
       .required('Local address is required')
       .test('Local address value already exist', 'Local address value already exist', (value) =>
-        regChecker(value, funcID, 'LOCAL_ADDRESS'),
+        regChecker(value, 'LOCAL_ADDRESS')
       ),
     access: yup.string().typeError('Access is required').required('Access is required'),
     dim: yup
@@ -86,7 +86,8 @@ const RegisterModal = (props: RegisterModalProps) => {
     resolver: yupResolver(schema),
   });
 
-  const regChecker = (value: string, funcID: string, type: string): boolean => {
+  const regChecker = (value: string, type: string): boolean => {
+    setFuncID(funcs[0].id);
     const funcRegs = funcs.find((func) => func.id === funcID);
     if (funcRegs != null && funcRegs.registers != null) {
       let filtered = Array<Register>();
@@ -132,7 +133,7 @@ const RegisterModal = (props: RegisterModalProps) => {
     addRegisterAction(register);
     const funcToUpdate: AddressSpace = funcs.filter((f) => f.id === data.parentFunctionId)[0];
     console.log(funcToUpdate);
-    let registerArr: string[] = [register.id];
+
     let currentRegs = funcToUpdate.registers;
     currentRegs.push(register.id);
     funcToUpdate.registers = currentRegs;

@@ -11,6 +11,9 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import { useAppSelector, useAppDispatch } from '../../hooks';
 import * as yup from 'yup';
 
+const electron = window.require('electron');
+const remote = electron.remote;
+
 type BlockModalProps = {
   open: boolean;
   setOpen: (open: boolean) => void;
@@ -41,8 +44,7 @@ const BlockModal = (props: BlockModalProps) => {
 
   const [selectedBlock, setSelectedBlock] = useState<Block>(null);
   const [blockID, setBlockD] = useState('empty');
-  const [funcID, setFuncID] = useState<string>(funcs !== null && funcs.length > 0 ? funcs[0].id : '');
-
+  const [funcID, setFuncID] = useState<string>(funcs !== null && funcs.length > 0 && funcs[0].id);
 
   const schema = yup.object().shape({
     name: yup
@@ -50,12 +52,13 @@ const BlockModal = (props: BlockModalProps) => {
       .typeError('Block name is required')
       .matches(RegExp('^[a-zA-Z0-9_]*$'), 'Use only alphanumeric characters and the underscore')
       .required('Block name is required')
-      .test('Block name already exist', 'Block name already exist', (value) => bkChecker(value, funcID, 'NAME')),
+      .test('Block name already exist', 'Block name already exist', (value) => bkChecker(value, 'NAME')),
     baseAddress: yup
       .string()
       .typeError('Base address is required')
       .matches(RegExp('0[xX][0-9a-fA-F]+'), 'Base address must be an hexadecimal value')
-      .required('Base address is required'),
+      .required('Base address is required')
+      .test('Base address value already exist', 'Base address value already exist', (value) => bkChecker(value, 'BASE_ADDRESS')),
     size: yup
       .number()
       .typeError('Size is required')
@@ -81,10 +84,10 @@ const BlockModal = (props: BlockModalProps) => {
     resolver: yupResolver(schema),
   });
 
-
-  const bkChecker = (value: string, funcID: string, type: string): boolean => {
-    const funcBks = funcs.filter((func) => func.id === funcID)[0];
-    if (funcBks.blocks !== null) {
+  const bkChecker = (value: string, type: string): boolean => {
+    setFuncID(funcs[0].id);
+    const funcBks = funcs.find((func) => func.id === funcID);
+    if (funcBks != null && funcBks.blocks != null) {
       let filtered = Array<Block>();
       const fetchedBks = blocks.filter((bk) => funcBks.blocks.some((bkID) => bk.id === bkID));
       if (type === 'NAME') {
@@ -99,8 +102,8 @@ const BlockModal = (props: BlockModalProps) => {
     return true;
   };
 
-
   const onSubmit = (data: IBlockFormInputs) => {
+    console.log("submit");
     props.editMode ? editBlock(data) : createBlock(data);
     props.setOpen(false);
     resetInitialValues();
@@ -108,7 +111,6 @@ const BlockModal = (props: BlockModalProps) => {
   };
 
   const createBlock = (data: IBlockFormInputs) => {
-
     let block: Block = new Block(
       uuidv4(),
       data.name,
@@ -118,7 +120,7 @@ const BlockModal = (props: BlockModalProps) => {
       data.description,
       data.parentFunctionId,
     );
-    console.log(block)
+    console.log(block);
     addBlockAction(block);
 
     const funcToUpdate: AddressSpace = funcs.filter((f) => f.id === data.parentFunctionId)[0];
@@ -138,7 +140,7 @@ const BlockModal = (props: BlockModalProps) => {
     selectedBlock.width = data.dataWidth;
     selectedBlock.parentFunc = data.parentFunctionId;
     selectedBlock.description = data.description;
-    
+
     updateBlockAction(selectedBlock);
     const funcToUpdate: AddressSpace = funcs.filter((f) => f.id === data.parentFunctionId)[0];
     const oldFunc: AddressSpace = funcs.filter((f) => f.id === currentParentId)[0];
@@ -215,204 +217,207 @@ const BlockModal = (props: BlockModalProps) => {
         open={props.open}
         onClose={() => {}}
       >
-        <div className="flex items-center justify-center min-h-screen pt-4 px-4 text-center sm:p-0">
-          <Transition.Child
-            as={Fragment}
-            enter="ease-out duration-300"
-            enterFrom="opacity-0"
-            enterTo="opacity-100"
-            leave="ease-in duration-200"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
-          >
-            <Dialog.Overlay className="fixed inset-0 bg-blueGray-800 dark:bg-transparent bg-opacity-75 transition-opacity" />
-          </Transition.Child>
+        
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 text-center sm:p-0">
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0"
+              enterTo="opacity-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100"
+              leaveTo="opacity-0"
+            >
+              <Dialog.Overlay className="fixed inset-0 bg-blueGray-800 dark:bg-transparent bg-opacity-75 transition-opacity" />
+            </Transition.Child>
 
-          <Transition.Child
-            as={Fragment}
-            enter="ease-out duration-200"
-            enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-            enterTo="opacity-100 translate-y-0 sm:scale-100"
-            leave="ease-in duration-100"
-            leaveFrom="opacity-100 translate-y-0 sm:scale-100"
-            leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-          >
-            <div className="inline-block align-middle backdrop-filter backdrop-blur-lg backdrop-contrast-75 backdrop-brightness-200 rounded-3xl py-6 text-left overflow-hidden transform-gpu transition-all my-8 max-w-lg w-full px-6">
-              <div className="text-left px-3 w-full">
-                <Dialog.Title as="h3" className="text-xl leading-6 text-center font-medium text-white">
-                  {props.editMode ? 'Edit a block' : 'Create a new block'}
-                </Dialog.Title>
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-200"
+              enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+              enterTo="opacity-100 translate-y-0 sm:scale-100"
+              leave="ease-in duration-100"
+              leaveFrom="opacity-100 translate-y-0 sm:scale-100"
+              leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+            >
+              <div className="inline-block align-middle backdrop-filter backdrop-blur-lg backdrop-contrast-75 backdrop-brightness-200 rounded-3xl py-6 text-left overflow-hidden transform-gpu transition-all my-8 max-w-lg w-full px-6">
+                <div className="text-left px-3 w-full">
+                  <Dialog.Title as="h3" className="text-xl leading-6 text-center font-medium text-white">
+                    {props.editMode ? 'Edit a block' : 'Create a new block'}
+                  </Dialog.Title>
 
-                <div className="mt-1">
-                  {props.editMode && (
-                    <div className="mt-4">
-                      <label htmlFor="baseAddress" className="block text-sm font-medium text-white">
-                        Block to edit
-                      </label>
-                      <div className="mt-1">
-                        <select
-                          id="functions"
-                          name="functions"
-                          className="mt-1 py-2 block w-full pl-3 pr-6 text-base border bg-blueGray-600 dark:bg-gray-700 dark:border-transparent dark:placeholder-gray-300 border-blueGray-600 text-white rounded-lg placeholder-blueGray-400 focus:outline-none focus:ring-lightBlue-400 focus:border-lightBlue-400 sm:text-sm"
-                          value={blockID}
-                          onChange={handleChange}
-                        >
-                          <option value="empty">Choose a block</option>
-                          {blocks.map((bk, idx) => (
-                            <option key={idx} value={bk.id}>
-                              {bk.name}
-                            </option>
-                          ))}
-                        </select>
+                  <div className="mt-1">
+                    {props.editMode && (
+                      <div className="mt-4">
+                        <label htmlFor="baseAddress" className="block text-sm font-medium text-white">
+                          Block to edit
+                        </label>
+                        <div className="mt-1">
+                          <select
+                            id="functions"
+                            name="functions"
+                            className="mt-1 py-2 block w-full pl-3 pr-6 text-base border bg-blueGray-600 dark:bg-gray-700 dark:border-transparent dark:placeholder-gray-300 border-blueGray-600 text-white rounded-lg placeholder-blueGray-400 focus:outline-none focus:ring-lightBlue-400 focus:border-lightBlue-400 sm:text-sm"
+                            value={blockID}
+                            onChange={handleChange}
+                          >
+                            <option value="empty">Choose a block</option>
+                            {blocks.map((bk, idx) => (
+                              <option key={idx} value={bk.id}>
+                                {bk.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  <form className="space-y-2" onSubmit={handleSubmit(onSubmit)}>
-                    <div className={props.editMode ? 'mt-1' : 'mt-4'}>
-                      <label htmlFor="name" className="block text-sm font-medium text-white">
-                        Name <span className="text-indigo-300">{errors.name && ' • ' + errors.name.message}</span>
-                      </label>
-                      <div className="mt-1">
-                        <input
-                          {...register('name', { required: true })}
-                          type="text"
-                          disabled={props.editMode && blockID === 'empty'}
-                          defaultValue={props.editMode && selectedBlock !== null ? selectedBlock.name : ''}
-                          placeholder="block_name"
-                          className="appearance-none block w-full px-3 py-2 border disabled:opacity-75  bg-blueGray-600 border-blueGray-600 dark:bg-gray-700 dark:border-transparent dark:placeholder-gray-300 text-white rounded-lg placeholder-blueGray-400 focus:outline-none focus:ring-lightBlue-400 focus:border-lightBlue-400 sm:text-sm"
-                        />
+                    <form className="space-y-2" onSubmit={handleSubmit(onSubmit)}>
+                      <div className={props.editMode ? 'mt-1' : 'mt-4'}>
+                        <label htmlFor="name" className="block text-sm font-medium text-white">
+                          Name <span className="text-indigo-300">{errors.name && ' • ' + errors.name.message}</span>
+                        </label>
+                        <div className="mt-1">
+                          <input
+                            {...register('name', { required: true })}
+                            type="text"
+                            disabled={props.editMode && blockID === 'empty'}
+                            defaultValue={props.editMode && selectedBlock !== null ? selectedBlock.name : ''}
+                            placeholder="block_name"
+                            className="appearance-none block w-full px-3 py-2 border disabled:opacity-75  bg-blueGray-600 border-blueGray-600 dark:bg-gray-700 dark:border-transparent dark:placeholder-gray-300 text-white rounded-lg placeholder-blueGray-400 focus:outline-none focus:ring-lightBlue-400 focus:border-lightBlue-400 sm:text-sm"
+                          />
+                        </div>
                       </div>
-                    </div>
 
-                    <div>
-                      <label htmlFor="localAddress" className="block text-sm font-medium text-white">
-                        Parent Function{' '}
-                        <span className="text-indigo-300">
-                          {errors.parentFunctionId && ' • ' + errors.parentFunctionId.message}
-                        </span>
-                      </label>
-                      <div className="mt-1">
-                        <select
-                          {...register('parentFunctionId', {
-                            value:
+                      <div>
+                        <label htmlFor="localAddress" className="block text-sm font-medium text-white">
+                          Parent Function{' '}
+                          <span className="text-indigo-300">
+                            {errors.parentFunctionId && ' • ' + errors.parentFunctionId.message}
+                          </span>
+                        </label>
+                        <div className="mt-1">
+                          <select
+                            {...register('parentFunctionId', {
+                              value:
+                                props.editMode && selectedBlock !== null
+                                  ? selectedBlock.parentFunc
+                                  : funcs.length > 0 && funcs[0].id,
+                            })}
+                            disabled={props.editMode && blockID === 'empty'}
+                            onChange={handleFuncChange}
+                            className="mt-1 py-2 block w-full pl-3 pr-6 text-base bg-blueGray-600 border-blueGray-600 dark:bg-gray-700 dark:border-transparent dark:placeholder-gray-300 text-white border rounded-lg focus:outline-none focus:ring-sky-400 focus:border-sky-400  sm:text-sm"
+                          >
+                            {funcs.map((func, idx) => (
+                              <option key={idx} value={func.id}>
+                                {func.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label htmlFor="baseAddress" className="block text-sm font-medium text-white">
+                          Base Address{' '}
+                          <span className="text-indigo-300">
+                            {errors.baseAddress && ' • ' + errors.baseAddress.message}
+                          </span>
+                        </label>
+                        <div className="mt-1">
+                          <input
+                            {...register('baseAddress', { required: true })}
+                            type="text"
+                            disabled={props.editMode && blockID === 'empty'}
+                            defaultValue={
                               props.editMode && selectedBlock !== null
-                                ? selectedBlock.parentFunc
-                                : funcs.length > 0 && funcs[0].id,
-                          })}
+                                ? '0x' + selectedBlock.baseAddress.toString(16)
+                                : ''
+                            }
+                            placeholder="0x0"
+                            className="appearance-none block w-full px-3 py-2 border disabled:opacity-75  bg-blueGray-600 border-blueGray-600 dark:bg-gray-700 dark:border-transparent dark:placeholder-gray-300 text-white rounded-lg placeholder-blueGray-400 focus:outline-none focus:ring-lightBlue-400 focus:border-lightBlue-400 sm:text-sm"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label htmlFor="size" className="block text-sm font-medium text-white">
+                          Size <span className="text-indigo-300">{errors.size && ' • ' + errors.size.message}</span>
+                        </label>
+                        <div className="mt-1">
+                          <input
+                            {...register('size', { required: true })}
+                            disabled={props.editMode && blockID === 'empty'}
+                            defaultValue={props.editMode && selectedBlock !== null ? selectedBlock.size : ''}
+                            type="number"
+                            placeholder="1024"
+                            className="appearance-none block w-full px-3 py-2 border disabled:opacity-75  bg-blueGray-600 border-blueGray-600 text-white rounded-lg placeholder-blueGray-400 dark:bg-gray-700 dark:border-transparent dark:placeholder-gray-300 focus:outline-none focus:ring-lightBlue-400 focus:border-lightBlue-400 sm:text-sm"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label htmlFor="dataWidth" className="block text-sm font-medium text-white">
+                          DataWidth{' '}
+                          <span className="text-indigo-300">
+                            {errors.dataWidth && ' • ' + errors.dataWidth.message}
+                          </span>
+                        </label>
+
+                        <div className="mt-1">
+                          <input
+                            {...register('dataWidth', { required: true })}
+                            disabled={props.editMode && blockID === 'empty'}
+                            type="number"
+                            defaultValue={props.editMode && selectedBlock !== null ? selectedBlock.width : ''}
+                            placeholder="32"
+                            className="appearance-none block w-full px-3 py-2 border disabled:opacity-75  bg-blueGray-600 border-blueGray-600 dark:bg-gray-700 dark:border-transparent dark:placeholder-gray-300 text-white rounded-lg placeholder-blueGray-400 focus:outline-none focus:ring-lightBlue-400 focus:border-lightBlue-400 sm:text-sm"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label htmlFor="description" className="block text-sm font-medium text-white">
+                          Description{' '}
+                        </label>
+
+                        <div className="mt-1 min-h-36 max-h-40">
+                          <textarea
+                            {...register('description', {
+                              required: false,
+                              value: props.editMode && selectedBlock !== null ? selectedBlock.description : '',
+                            })}
+                            disabled={props.editMode && blockID === 'empty'}
+                            placeholder="Description"
+                            className="appearance-none block w-full px-3 py-2 max-h-28 disabled:opacity-75 border bg-blueGray-600 border-blueGray-600 dark:bg-gray-700 dark:border-transparent dark:placeholder-gray-300 text-white rounded-lg placeholder-blueGray-400 focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm"
+                          />
+                        </div>
+                      </div>
+                      <div className="mt-2 pt-3 flex flex-row-reverse">
+                        <button
+                          type="submit"
                           disabled={props.editMode && blockID === 'empty'}
-                          onChange={handleFuncChange}
-                          className="mt-1 py-2 block w-full pl-3 pr-6 text-base bg-blueGray-600 border-blueGray-600 dark:bg-gray-700 dark:border-transparent dark:placeholder-gray-300 text-white border rounded-lg focus:outline-none focus:ring-sky-400 focus:border-sky-400  sm:text-sm"
+                          className={`w-full inline-flex justify-center rounded-lg shadow-md px-4 py-2 disabled:transform-none disabled:opacity-50 disabled:bg-yellow-500  bg-${
+                            props.editMode ? 'yellow' : 'emerald'
+                          }-400 text-base font-medium text-white hover:bg-${
+                            props.editMode ? 'yellow' : 'emerald'
+                          }-500 duration-300 transform-gpu hover:scale-95 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm`}
                         >
-                          {funcs.map((func, idx) => (
-                            <option key={idx} value={func.id}>
-                              {func.name}
-                            </option>
-                          ))}
-                        </select>
+                          {props.editMode ? 'Edit' : 'Add'} Block
+                        </button>
+                        <button
+                          type="button"
+                          className="mt-3 w-full inline-flex justify-center rounded-lg active:scale-95 transform-gpu shadow-lg hover:shadow-lg duration-300 px-4 py-2 bg-blueGray-600 dark:bg-gray-700 text-base text-gray-300 font-medium sm:mt-0 sm:w-auto sm:text-sm focus:outline-none"
+                          onClick={handleCancel}
+                          ref={cancelButtonRef}
+                        >
+                          Cancel
+                        </button>
                       </div>
-                    </div>
-
-                    <div>
-                      <label htmlFor="baseAddress" className="block text-sm font-medium text-white">
-                        Base Address{' '}
-                        <span className="text-indigo-300">
-                          {errors.baseAddress && ' • ' + errors.baseAddress.message}
-                        </span>
-                      </label>
-                      <div className="mt-1">
-                        <input
-                          {...register('baseAddress', { required: true })}
-                          type="text"
-                          disabled={props.editMode && blockID === 'empty'}
-                          defaultValue={
-                            props.editMode && selectedBlock !== null
-                              ? '0x' + selectedBlock.baseAddress.toString(16)
-                              : ''
-                          }
-                          placeholder="0x0"
-                          className="appearance-none block w-full px-3 py-2 border disabled:opacity-75  bg-blueGray-600 border-blueGray-600 dark:bg-gray-700 dark:border-transparent dark:placeholder-gray-300 text-white rounded-lg placeholder-blueGray-400 focus:outline-none focus:ring-lightBlue-400 focus:border-lightBlue-400 sm:text-sm"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label htmlFor="size" className="block text-sm font-medium text-white">
-                        Size <span className="text-indigo-300">{errors.size && ' • ' + errors.size.message}</span>
-                      </label>
-                      <div className="mt-1">
-                        <input
-                          {...register('size', { required: true })}
-                          disabled={props.editMode && blockID === 'empty'}
-                          defaultValue={props.editMode && selectedBlock !== null ? selectedBlock.size : ''}
-                          type="number"
-                          placeholder="1024"
-                          className="appearance-none block w-full px-3 py-2 border disabled:opacity-75  bg-blueGray-600 border-blueGray-600 text-white rounded-lg placeholder-blueGray-400 dark:bg-gray-700 dark:border-transparent dark:placeholder-gray-300 focus:outline-none focus:ring-lightBlue-400 focus:border-lightBlue-400 sm:text-sm"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label htmlFor="dataWidth" className="block text-sm font-medium text-white">
-                        DataWidth{' '}
-                        <span className="text-indigo-300">{errors.dataWidth && ' • ' + errors.dataWidth.message}</span>
-                      </label>
-
-                      <div className="mt-1">
-                        <input
-                          {...register('dataWidth', { required: true })}
-                          disabled={props.editMode && blockID === 'empty'}
-                          type="number"
-                          defaultValue={props.editMode && selectedBlock !== null ? selectedBlock.width : ''}
-                          placeholder="32"
-                          className="appearance-none block w-full px-3 py-2 border disabled:opacity-75  bg-blueGray-600 border-blueGray-600 dark:bg-gray-700 dark:border-transparent dark:placeholder-gray-300 text-white rounded-lg placeholder-blueGray-400 focus:outline-none focus:ring-lightBlue-400 focus:border-lightBlue-400 sm:text-sm"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label htmlFor="description" className="block text-sm font-medium text-white">
-                        Description{' '}
-                      </label>
-
-                      <div className="mt-1 min-h-36 max-h-40">
-                        <textarea
-                          {...register('description', {
-                            required: false,
-                            value: props.editMode && selectedBlock !== null ? selectedBlock.description : '',
-                          })}
-                          disabled={props.editMode && blockID === 'empty'}
-                          placeholder="Description"
-                          className="appearance-none block w-full px-3 py-2 max-h-28 disabled:opacity-75 border bg-blueGray-600 border-blueGray-600 dark:bg-gray-700 dark:border-transparent dark:placeholder-gray-300 text-white rounded-lg placeholder-blueGray-400 focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm"
-                        />
-                      </div>
-                    </div>
-                    <div className="mt-2 pt-3 flex flex-row-reverse">
-                      <button
-                        type="submit"
-                        disabled={props.editMode && blockID === 'empty'}
-                        className={`w-full inline-flex justify-center rounded-lg shadow-md px-4 py-2 disabled:transform-none disabled:opacity-50 disabled:bg-yellow-500  bg-${
-                          props.editMode ? 'yellow' : 'emerald'
-                        }-400 text-base font-medium text-white hover:bg-${
-                          props.editMode ? 'yellow' : 'emerald'
-                        }-500 duration-300 transform-gpu hover:scale-95 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm`}
-                      >
-                        {props.editMode ? 'Edit' : 'Add'} Block
-                      </button>
-                      <button
-                        type="button"
-                        className="mt-3 w-full inline-flex justify-center rounded-lg active:scale-95 transform-gpu shadow-lg hover:shadow-lg duration-300 px-4 py-2 bg-blueGray-600 dark:bg-gray-700 text-base text-gray-300 font-medium sm:mt-0 sm:w-auto sm:text-sm focus:outline-none"
-                        onClick={handleCancel}
-                        ref={cancelButtonRef}
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </form>
+                    </form>
+                  </div>
                 </div>
               </div>
-            </div>
-          </Transition.Child>
-        </div>
+            </Transition.Child>
+          </div>
       </Dialog>
     </Transition.Root>
   );

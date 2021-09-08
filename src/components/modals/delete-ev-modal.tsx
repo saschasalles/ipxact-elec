@@ -69,7 +69,7 @@ const DeleteEVModal = (props: DeleteEVModalProps) => {
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <Dialog.Overlay className="fixed inset-0 bg-blueGray-800 bg-opacity-75 transition-opacity" />
+            <Dialog.Overlay className="fixed inset-0 bg-blueGray-800 dark:bg-transparent bg-opacity-75 transition-opacity" />
           </Transition.Child>
 
           <Transition.Child
@@ -85,7 +85,7 @@ const DeleteEVModal = (props: DeleteEVModalProps) => {
               <div className="hidden sm:block absolute top-0 right-0 pt-4 pr-4">
                 <button
                   type="button"
-                  className="bg-blueGray-600 p-0.5 rounded-full text-gray-400 hover:text-gray-200 focus:outline-none"
+                  className="bg-blueGray-600 dark:bg-gray-700 p-0.5 rounded-full text-gray-400 hover:text-gray-200 focus:outline-none"
                   onClick={() => props.setOpen(false)}
                 >
                   <span className="sr-only">Close</span>
@@ -104,7 +104,7 @@ const DeleteEVModal = (props: DeleteEVModalProps) => {
                     <select
                       id="currentField"
                       name="currentField"
-                      className="mt-1 py-2 block w-full pl-3 pr-6 font-semibold bg-blueGray-600 border-blueGray-600 text-white border rounded-lg focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm"
+                      className="mt-1 py-2 block w-full pl-3 pr-6 font-semibold bg-blueGray-600 border-blueGray-600 dark:bg-gray-600 dark:border-transparent text-white border rounded-lg focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm"
                       value={currentField}
                       onChange={handleFieldChange}
                     >

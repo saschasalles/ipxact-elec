@@ -59,7 +59,7 @@ export const MappingTableRow = (props: MappingTableRowProps) => {
         {'0x' + props.rowData.baseAddress.toString(16)}
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-100 border-r border-blueGray-500 dark:border-gray-600">
-        {props.rowData.localAddress !== null && '0x' + props.rowData.localAddress.toString(16)}
+        {props.rowData.localAddress != null && '0x' + props.rowData.localAddress.toString(16)}
       </td>
       <td
         className={`${

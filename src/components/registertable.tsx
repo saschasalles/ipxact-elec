@@ -113,10 +113,6 @@ const RegisterTable = (props: RegisterTableProps) => {
         if (evsID != null && evsID.length > 0) {
           evsID.map((ev, idx) => {
             let fetchedEV = storeEVS.find(e => e.id === ev)
-              
-            console.log("fet", fetchedEV)
-            console.log(storeEVS)
-            console.log(evsID)
             if (fetchedEV != null) {
               evString += `${fetchedEV.name} : ${fetchedEV.value} : ${fetchedEV.description} \n`;
             } else {

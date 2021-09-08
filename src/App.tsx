@@ -6,22 +6,14 @@ import { Button } from './components/button';
 import { DocumentTextIcon, PlusCircleIcon } from '@heroicons/react/solid';
 import CreateModal from './components/modals/create-modal';
 import { menuItemsEnabler, setElectronTitle } from './helpers/electron-helper';
-import { addProject } from './store/projectActions';
-import { addFunction } from './store/functionActions';
-import { addRegister } from './store/registerActions';
-import { addField } from './store/fieldActions';
-import { v4 as uuidv4 } from 'uuid';
-import { AddressSpace } from './models/address-space';
-import { Register } from './models/register';
-import { Field } from './models/field';
-import { Project } from './models/project';
-import { Access } from './models/access';
 import { useDispatch } from 'react-redux';
 import { Dispatch } from 'redux';
-import { useAppSelector } from './hooks';
 import { ResetAppAction } from './store/store';
 import { fetchItems } from './helpers/ipxact-helper';
 import { store } from './store/store';
+import { Project } from './models/project';
+import { useAppSelector } from '../src/hooks';
+import ConfirmDeleteModal from '../src/components/modals/confirm-delete-modal';
 
 const electron = window.require('electron');
 
@@ -29,19 +21,101 @@ const App = () => {
   const [engineMode, setEngineMode] = useState(false);
   const [path, setPath] = useState(['']);
   const [createModal, setCreateModal] = useState(false);
+  const [editModal, setEditModal] = useState([false, false]);
+  const [confirmClose, setConfirmClose] = useState(false);
+  const [withRecent, setWithRecent] = useState(false);
+  const projects: readonly Project[] = useAppSelector((state) => state.projectReducer.projects);
+  const [selectedProject, setSelectedProject] = useState<Project>(null);
+
   const dispatch: Dispatch<any> = useDispatch();
 
-  const handleOpenFile = () => {
+  const handleOpenFile = (path?: string) => {
+    if (path == null) {
+      const dialog = electron.remote.dialog;
+      dialog
+        .showOpenDialog(electron.remote.getCurrentWindow(), {
+          properties: ['openFile'],
+          filters: [{ name: 'Ipxact Files', extensions: ['xml'] }],
+        })
+        .then((result) => {
+          if (result.canceled === false) {
+            setPath(result.filePaths);
+            electron.ipcRenderer.send('parse-xml', result.filePaths[0]);
+            electron.remote.app.addRecentDocument(result.filePaths[0]);
+          }
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    } else {
+      electron.ipcRenderer.send('parse-xml', path);
+      setEngineMode(true);
+    }
+  };
+
+  const handleEditProject = () => {
+    setSelectedProject(projects[0]);
+    setEditModal([true, true]);
+  };
+
+  const handleCreateFile = () => {
+    setCreateModal(true);
+  };
+
+  const handleClose = (saveBefore?: boolean) => {
+    saveBefore && handleSaveFile();
+    setEngineMode(false);
+    menuItemsEnabler(false);
+    setElectronTitle('Xactron');
+    dispatch(ResetAppAction);
+
+    withRecent && handleOpenFile(path[0]);
+    setWithRecent(false);
+    setConfirmClose(false);
+    setPath(['']);
+  };
+
+  const handleSaveFile = (customPath?: string) => {
+    const state = store.getState();
+    const storeProjects = state.projectReducer.projects;
+    const storeFuncs = state.functionReducer.addressSpaces;
+    const storeBlocks = state.blockReducer.blocks;
+    const storeRegs = state.registerReducer.registers;
+    const storeFields = state.fieldReducer.fields;
+    const storeEVS = state.enumeratedValueReducer.enumeratedValues;
+
+    const data = {
+      project: storeProjects[0],
+      funcs: storeFuncs,
+      blocks: storeBlocks,
+      regs: storeRegs,
+      fields: storeFields,
+      evs: storeEVS,
+    };
+
+    if (customPath != null) {
+      const endPath = data.project._filePath.replace(/^.*[\\\/]/, '');
+      console.log(endPath);
+      const finalPath = customPath + '/' + endPath;
+      console.log(finalPath);
+      electron.ipcRenderer.send('save-as', [data, finalPath]);
+    } else {
+      electron.ipcRenderer.send('save-project', [data]);
+    }
+  };
+
+  const handleSaveAs = () => {
     const dialog = electron.remote.dialog;
     dialog
       .showOpenDialog(electron.remote.getCurrentWindow(), {
-        properties: ['openFile'],
-        filters: [{ name: 'Ipxact Files', extensions: ['xml'] }],
+        properties: ['openDirectory'],
       })
       .then((result) => {
         if (result.canceled === false) {
-          setPath(result.filePaths);
-          electron.ipcRenderer.send('parse-xml', result.filePaths[0]);
+          // Warning: This feature don't set the state path it's just an "export"
+          // Think of this as just a "save here" - Kisses Sascha
+
+          handleSaveFile(result.filePaths[0]);
         }
       })
       .catch((err) => {
@@ -49,27 +123,9 @@ const App = () => {
       });
   };
 
-  const handleCreateFile = () => {
-    setCreateModal(true);
-  };
-
-  const handleClose = () => {
-    setEngineMode(false);
-    menuItemsEnabler(false);
-    setPath(['']);
-    setElectronTitle('Xactron');
-    dispatch(ResetAppAction);
-  };
-
-  const handleSaveFile = () => {
-    const state = store.getState()
-    console.log("RENDERED", state);
-    electron.ipcRenderer.send('save-project', state);
-  };
-
   useEffect(() => {
     electron.ipcRenderer.on('mm-close-project', (event, arg) => {
-      handleClose();
+      setConfirmClose(true);
     });
 
     electron.ipcRenderer.on('mm-open-project', (event, arg) => {
@@ -84,11 +140,32 @@ const App = () => {
       handleSaveFile();
     });
 
-    electron.ipcRenderer.on('add-parsed-items', function (evt, data) {
+    electron.ipcRenderer.on('mm-save-as', (event, arg) => {
+      handleSaveAs();
+    });
+
+    electron.ipcRenderer.on('mm-edit-project', (event, arg) => {
+      handleEditProject();
+    });
+
+    electron.ipcRenderer.on('add-parsed-items', (evt, data) => {
       setEngineMode(true);
       menuItemsEnabler(true);
       const project = fetchItems(data);
       setElectronTitle(`Xactron - ${project.projectName} - ${project.filePath}`);
+    });
+
+    electron.ipcRenderer.on('open-recent-file', (event, data) => {
+      const state = store.getState();
+      const storeProjects = state.projectReducer.projects;
+      setWithRecent(true);
+      console.log(storeProjects.length);
+      if (storeProjects.length >= 1) {
+        setPath([data]);
+        setConfirmClose(true);
+      } else {
+        handleOpenFile(data);
+      }
     });
   }, []);
   //
@@ -99,6 +176,7 @@ const App = () => {
           open={createModal}
           setOpen={() => setCreateModal(!createModal)}
           setEngine={() => setEngineMode(!engineMode)}
+          editMode={false}
         />
 
         <div className="select-none flex flex-col justify-center items-center min-h-screen bg-gradient-to-br from-blueGray-900 to-blueGray-700 dark:from-gray-900 dark:to-gray-700 min-w-screen space-y-20 ">
@@ -156,6 +234,25 @@ const App = () => {
 
       <Transition show={engineMode}>
         <EnginePage />
+        <CreateModal
+          open={editModal[0]}
+          setOpen={() => setEditModal([!editModal[0], editModal[1]])}
+          setEngine={() => setEngineMode(!engineMode)}
+          editMode={editModal[1]}
+          projectToEdit={selectedProject}
+        />
+        <ConfirmDeleteModal
+          open={confirmClose}
+          setOpen={() => setConfirmClose(!confirmClose)}
+          actionClose={() => handleClose()}
+          action={() => {
+            handleClose(true);
+          }}
+          title="Confirm close"
+          message="You are about to close this project. Any unsaved data will be destroyed"
+          type=""
+          closeMode={true}
+        />
       </Transition>
     </div>
   );

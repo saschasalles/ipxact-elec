@@ -1,0 +1,94 @@
+{
+  "project": {
+    "_projectID": "2c8967bd-7760-4af5-8d1d-f63bcc244e64",
+    "_fileName": "FPGA SMU pour radar XM200",
+    "_filePath": "/Users/saschasalles/Projets/IHM/Assets/smaug.xml",
+    "_addressBits": 32,
+    "_projectName": "FPGA SMU pour radar XM200",
+    "_company": "Thales DMS",
+    "_description": "",
+    "_version": "1.0"
+  },
+  "funcs": [
+    {
+      "_id": "0a7e3fb9-dd9c-48f5-b864-512354c46a92",
+      "_name": "DISCRETS",
+      "_baseAddress": 2684485632,
+      "_size": 1024,
+      "_width": 32,
+      "_duplicateNb": "",
+      "_duplicateId": "",
+      "_registers": [
+        "b50ea458-910e-4c26-8ecc-d1d3cb0d8848",
+        "e47bc798-705c-44a8-80b6-2e80b728be37",
+        "fec825f1-379a-4582-b3ca-7956e9510048"
+      ],
+      "_blocks": []
+    }
+  ],
+  "blocks": [],
+  "regs": [
+    {
+      "_id": "b50ea458-910e-4c26-8ecc-d1d3cb0d8848",
+      "_parentFunctionId": "0a7e3fb9-dd9c-48f5-b864-512354c46a92",
+      "_name": "version",
+      "_address": 0,
+      "_access": "read-write",
+      "_description": "Registre contenant l'ensemble des numéros de version du FPGA.",
+      "_defaultValue": 160,
+      "_mask": 0,
+      "_dim": 0,
+      "_dimOffset": 0,
+      "_duplicateNb": null,
+      "_duplicateId": null,
+      "_isHidden": false,
+      "_fields": ["516b809c-7206-4680-af49-6b613785e014"]
+    },
+    {
+      "_id": "e47bc798-705c-44a8-80b6-2e80b728be37",
+      "_parentFunctionId": "0a7e3fb9-dd9c-48f5-b864-512354c46a92",
+      "_name": "date",
+      "_address": 1,
+      "_access": "read-write",
+      "_description": "Registre contenant la date de génération du FPGA",
+      "_defaultValue": 0,
+      "_mask": 0,
+      "_dim": 0,
+      "_dimOffset": 0,
+      "_duplicateNb": null,
+      "_duplicateId": null,
+      "_isHidden": false,
+      "_fields": []
+    },
+    {
+      "_id": "fec825f1-379a-4582-b3ca-7956e9510048",
+      "_parentFunctionId": "0a7e3fb9-dd9c-48f5-b864-512354c46a92",
+      "_name": "fpga_type",
+      "_address": 2,
+      "_access": "read-only",
+      "_description": "This register helps to identy if the running FPGA is a SMAUG_TEST or SMAUG FPGA on evaluation board.",
+      "_defaultValue": 0,
+      "_mask": 0,
+      "_dim": 0,
+      "_dimOffset": 0,
+      "_duplicateNb": null,
+      "_duplicateId": null,
+      "_isHidden": false,
+      "_fields": []
+    }
+  ],
+  "fields": [
+    {
+      "_id": "516b809c-7206-4680-af49-6b613785e014",
+      "_parentRegID": "b50ea458-910e-4c26-8ecc-d1d3cb0d8848",
+      "_name": "field",
+      "_defaultValue": 10,
+      "_description": "desc",
+      "_access": 1,
+      "_posh": 8,
+      "_posl": 4,
+      "_enumeratedValues": []
+    }
+  ],
+  "evs": []
+}
