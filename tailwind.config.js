@@ -7,7 +7,10 @@ module.exports = {
       75: '75vh',
       9: ' 2.25rem',
     },
-
+    boxShadow: {
+      neon: '0 0 8px #fff, inset 0 0 8px #fff, 0 0 16px #4D4DFF, inset 0 0 16px #4D4DFF, 0 0 32px #4D4DFF, inset 0 0 32px #4D4DFF;',
+      greenNeon: '0 0 8px #fff, inset 0 0 8px #fff, 0 0 16px #39ff14, inset 0 0 16px #39ff14, 0 0 32px #39ff14, inset 0 0 32px #39ff14;'
+    },
     colors: {
       white: colors.white,
       black: colors.black,
@@ -32,6 +35,7 @@ module.exports = {
       amber: colors.amber,
       emerald: colors.emerald,
       transparent: 'transparent',
+      nativeGray: '#353839',
     },
   },
   variants: {

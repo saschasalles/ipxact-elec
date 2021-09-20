@@ -2,11 +2,11 @@ const rules = require('./webpack.rules');
 const plugins = require('./webpack.plugins');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const path = require('path');
-const assets = ['assets'];
+const assets = ['static'];
 
 const copyPlugins = assets.map((asset) => {
   return new CopyWebpackPlugin({
-    patterns: [{ from: path.resolve(__dirname, 'src', asset), to: asset }],
+    patterns: [{ from: path.resolve(__dirname, 'src', asset), to: path.resolve(__dirname, '.webpack/renderer', asset) }],
   });
 });
 
