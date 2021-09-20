@@ -1,2 +1,5 @@
+cx-Freeze==6.8
+importlib-metadata==4.8.1
 ipyxact==0.2.4
 PyYAML==5.4.1
+zipp==3.5.0

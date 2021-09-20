@@ -2,6 +2,7 @@ import ipyxact.ipyxact
 import sys
 import json
 import copy
+from pathlib import Path
 
 
 class XactronParser:
@@ -30,12 +31,13 @@ class XactronParser:
 
     def file_info(self, project=None):
         if project == None:
+            # Read Mode
             self.project = {
-                "name": self.component.name,
+                "fileName": Path(self.path).stem,
+                "name": self.component.library,
                 "version": self.component.version,
-                "description": self.component.description,
-                "vendor": self.component.vendor,
-                "library": self.component.library,
+                "description": self.component.name,
+                "company": self.component.vendor,
                 "path": self.path
             }
 
@@ -44,14 +46,16 @@ class XactronParser:
                     self.project["addressUnitBits"] = memoryMap.addressUnitBits
                     break
         else:
-            self.component.name = project['_projectName']
+            # Write Mode
+            self.component.name = project['_description']
             self.component.version = project['_version']
             self.component.vendor = project['_company']
-            self.component.name = project['_description']
             self.component.library = project['_projectName']
+            
 
     def parse(self, data=None):
         if data == None:
+            # Read Mode
             for memoryMap in self.memoryMaps:
                 for func in memoryMap.addressBlock:
                     if func.vendorExtensions != None:
@@ -66,6 +70,7 @@ class XactronParser:
                         self.rw_registers(func)
                         self.rw_blocks(func)
         else:
+            # Write Mode
             self.component.memoryMaps = ipyxact.ipyxact.MemoryMaps()
             self.memoryMap = ipyxact.ipyxact.MemoryMap()
             self.memoryMap.name = "RegisterMap"
@@ -92,6 +97,7 @@ class XactronParser:
 
     def rw_blocks(self, func, data=None):
         if data == None:
+            # Read Mode
             for block in func.memoryBlockData:
                 if block.vendorExtensions != None:
                     blockDic = {
@@ -105,6 +111,7 @@ class XactronParser:
                     }
                     self.blocks.append(blockDic)
         else:
+            # Write Mode
             funcId = func.vendorExtensions.funcId
             blocks = []
             for block in data['blocks']:
@@ -123,6 +130,7 @@ class XactronParser:
 
     def rw_registers(self, func, data=None):
         if data == None:
+            # Read Mode
             for reg in func.register:
                 if reg.vendorExtensions != None:
                     registerDic = {
@@ -132,12 +140,15 @@ class XactronParser:
                         "addressOffset": reg.addressOffset,
                         "size": reg.size,
                         "id": reg.vendorExtensions.regId,
-                        "parentFuncId": func.vendorExtensions.funcId
+                        "parentFuncId": func.vendorExtensions.funcId,
+                        "duplicateNb": reg.vendorExtensions.duplicateNb,
+                        "lastDuplicateIndex": reg.vendorExtensions.lastDuplicateIndex
                     }
                     self.registers.append(registerDic)
                     self.rw_fields(reg)
 
         else:
+            # Write Mode
             funcId = func.vendorExtensions.funcId
             registers = []
             for reg in data['regs']:
@@ -151,6 +162,8 @@ class XactronParser:
                     newReg.size = func.width
                     vendExt = ipyxact.ipyxact.VendorExtensions()
                     vendExt.regId = reg['_id']
+                    vendExt.duplicateNb = reg['_duplicateNb']
+                    vendExt.lastDuplicateIndex = reg['_lastDuplicateIndex']
                     newReg.vendorExtensions = vendExt
                     self.rw_fields(newReg, reg["_id"], data)
                     registers.append(newReg)
@@ -159,6 +172,7 @@ class XactronParser:
 
     def rw_fields(self, register, registerId=None, data=None):
         if data == None and registerId == None:
+            # Read Mode
             for field in register.field:
                 if field.vendorExtensions != None:
                     fieldDic = {
@@ -173,6 +187,7 @@ class XactronParser:
                     self.fields.append(fieldDic)
                     self.rw_evs(field)
         else:
+            # Write Mode
             regId = registerId
             fields = []
             for field in data['fields']:
@@ -186,20 +201,45 @@ class XactronParser:
                     vendExt = ipyxact.ipyxact.VendorExtensions()
                     vendExt.fieldId = field['_id']
                     newField.vendorExtensions = vendExt
+                    self.rw_evs(newField, field["_id"], data)
                     fields.append(newField)
             register.field = fields
 
-    def rw_evs(self, field):
-        for ev in field.enumeratedValues:
-            if ev.vendorExtensions != None:
-                evDic = {
-                    "name": ev.name,
-                    "description": ev.description,
-                    "value": ev.value,
-                    "id": ev.vendorExtensions.evId,
-                    "parentFieldId": ev.vendorExtensions.fieldId
-                }
-                self.evs.append(evDic)
+    def rw_evs(self, field, fieldId=None, data=None):
+
+        if data == None and fieldId == None:
+            pass
+            # Read Mode
+            for evs in field.enumeratedValues:
+                for ev in evs.enumeratedValue:
+                    if ev.vendorExtensions != None:
+                        evDic = {
+                            "name": ev.name,
+                            "description": ev.description,
+                            "value": ev.value,
+                            "id": ev.vendorExtensions.evId,
+                            "parentFieldId": ev.vendorExtensions.fieldId
+                        }
+                        self.evs.append(evDic)
+        else:
+            # Write Mode
+            evs = []
+            enumeratedValues = ipyxact.ipyxact.EnumeratedValues()
+            for ev in data['evs']:
+                if ev['_parentFieldID'] == fieldId:
+                    newEv = ipyxact.ipyxact.EnumeratedValue()
+                    newEv.name = ev['_name']
+                    newEv.description = ev['_description']
+                    newEv.value = ev['_value']
+                    vendExt = ipyxact.ipyxact.VendorExtensions()
+                    vendExt.fieldId = fieldId
+                    vendExt.evId = ev['_id']
+                    newEv.vendorExtensions = vendExt
+                    evs.append(newEv)
+
+            enumeratedValues.enumeratedValue = evs
+            field.enumeratedValues = [enumeratedValues]
+
 
     def jsonify(self):
         dic = {
