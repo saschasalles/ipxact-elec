@@ -6,70 +6,7 @@ import { Access } from '../models/access';
 
 const initialRegisterState: RegisterState = {
   registers: [
-  //   new Register(
-  //     "1",
-  //     "1",
-  //     "reg",
-  //     11,
-  //     Access.Read,
-  //     "description",
-  //     0,
-  //     0,
-  //     1,
-  //     0,
-  //     false,
-  //     null,
-  //     null,
-  //     [],
-  //   ),
-  //   new Register(
-  //     "2",
-  //     "1",
-  //     "reg_1",
-  //     0,
-  //     Access.ReadWriteOnce,
-  //     "simple description",
-  //     0,
-  //     0,
-  //     1,
-  //     0,
-  //     false,
-  //     null,
-  //     null,
-  //     [],
-  //   ),
-  //   new Register(
-  //     "3",
-  //     "2",
-  //     "reg_2",
-  //     1,
-  //     Access.WriteOnce,
-  //     "jolie description",
-  //     0,
-  //     0,
-  //     1,
-  //     0,
-  //     false,
-  //     null,
-  //     null,
-  //     [],
-  //   ),
-  //   new Register(
-  //     "4",
-  //     "2",
-  //     "reg_3",
-  //     2,
-  //     Access.Write,
-  //     "description plus longue",
-  //     0,
-  //     0,
-  //     1,
-  //     0,
-  //     false,
-  //     null,
-  //     null,
-  //     [],
-  //   ),
+
   ],
 };
 
@@ -94,7 +31,6 @@ const registerReducer = (state: RegisterState = initialRegisterState, action: Re
     case actionTypes.UPDATE_REGISTER:
       if ('register' in action) {
         const updatedRegister: Register = action.register;
-        console.log('ADDRESS ACTION', updatedRegister);
         const newState = state.registers.map((reg) => {
           if (reg.id === updatedRegister.id) {
             (reg.name = updatedRegister.name),

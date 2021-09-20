@@ -17,24 +17,20 @@ type RegisterModalProps = {
   open: boolean;
   setOpen: (open: boolean) => void;
   editMode: boolean;
-  selectedReg?: string
+  selectedReg?: string;
 };
 
 const RegisterModal = (props: RegisterModalProps) => {
   const cancelButtonRef = useRef(null);
-
   const dispatch: Dispatch<any> = useAppDispatch();
-
   const addRegisterAction = useCallback(
     (register: Register) => dispatch(addRegister(register)),
     [dispatch, addRegister],
   );
-
   const updateRegAction = useCallback(
     (register: Register) => dispatch(updateRegister(register)),
     [dispatch, updateRegister],
   );
-
   const updateFuncAction = useCallback(
     (addressSpace: AddressSpace) => dispatch(updateFunction(addressSpace)),
     [dispatch, updateFunction],
@@ -45,7 +41,7 @@ const RegisterModal = (props: RegisterModalProps) => {
 
   const [selectedRegister, setSelectedRegister] = useState<Register>(null);
   const [regID, setRegID] = useState('empty');
-  const [funcID, setFuncID] = useState<string>((funcs != null && funcs.length > 0) && funcs[0].id);
+  const [funcID, setFuncID] = useState<string>(funcs != null && funcs.length > 0 && funcs[0].id);
   const schema = yup.object().shape({
     name: yup
       .string()
@@ -59,7 +55,7 @@ const RegisterModal = (props: RegisterModalProps) => {
       .matches(RegExp('0[xX][0-9a-fA-F]+'), 'Local address must be an hexadecimal value')
       .required('Local address is required')
       .test('Local address value already exist', 'Local address value already exist', (value) =>
-        regChecker(value, 'LOCAL_ADDRESS')
+        regChecker(value, 'LOCAL_ADDRESS'),
       ),
     access: yup.string().typeError('Access is required').required('Access is required'),
     dim: yup
@@ -87,7 +83,6 @@ const RegisterModal = (props: RegisterModalProps) => {
   });
 
   const regChecker = (value: string, type: string): boolean => {
-    setFuncID(funcs[0].id);
     const funcRegs = funcs.find((func) => func.id === funcID);
     if (funcRegs != null && funcRegs.registers != null) {
       let filtered = Array<Register>();
@@ -125,9 +120,10 @@ const RegisterModal = (props: RegisterModalProps) => {
       data.dim,
       parseInt(data.dimOffset, 16),
       false,
-      null,
+      0,
       null,
       [],
+      0
     );
 
     addRegisterAction(register);
@@ -171,7 +167,6 @@ const RegisterModal = (props: RegisterModalProps) => {
     }
     oldFunc.registers = filteredArr;
     updateFuncAction(funcToUpdate);
-
     updateFuncAction(oldFunc);
     clearErrors();
   };
@@ -218,7 +213,7 @@ const RegisterModal = (props: RegisterModalProps) => {
         setValue('localAddress', '0x' + selected.address.toString(16));
         setValue('dim', selected.dim);
         setValue('dimOffset', '0x' + selected.dimOffset.toString(16));
-        setValue('access', Access[selected.access]);
+        setValue('access', Access[selected.access as number]);
         setValue('description', selected.description);
         setSelectedRegister(selected);
       } else {
@@ -229,9 +224,13 @@ const RegisterModal = (props: RegisterModalProps) => {
 
   useEffect(() => {
     if (props.selectedReg != null) {
-      setRegID(props.selectedReg)
+      setRegID(props.selectedReg);
     }
-  }, [props.selectedReg])
+  }, [props.selectedReg]);
+
+  useEffect(() => {
+    setFuncID(funcs[0].id);
+  }, []);
 
   return (
     <Transition.Root show={props.open} as={Fragment}>
@@ -373,7 +372,7 @@ const RegisterModal = (props: RegisterModalProps) => {
                           {...register('access', {
                             value:
                               props.editMode && selectedRegister !== null
-                                ? Access[selectedRegister.access]
+                                ? Access[selectedRegister.access as number]
                                 : Access[Access.Read],
                           })}
                           disabled={props.editMode && regID === 'empty'}
@@ -447,13 +446,19 @@ const RegisterModal = (props: RegisterModalProps) => {
                     </div>
 
                     <div className="mt-0.5 pt-1 flex justify-between">
-                    {props.editMode ? (
+                      {props.editMode ? (
                         <div className="text-sm font-medium flex flex-col text-left text-sky-200">
-                          <div>{selectedRegister && `Default Value • 0x${selectedRegister.defaultValue.toString(16)}`}</div>
+                          <div>
+                            {selectedRegister && `Default Value • 0x${selectedRegister.defaultValue.toString(16)}`}
+                          </div>
                           <div>{selectedRegister && `Mask • 0x${selectedRegister.mask.toString(16)}`}</div>
-                          <div>{selectedRegister && selectedRegister.fields &&`Nb fields • ${selectedRegister.fields.length}`}</div>
-                        </div>)
-                        : (
+                          <div>
+                            {selectedRegister &&
+                              selectedRegister.fields &&
+                              `Nb fields • ${selectedRegister.fields.length}`}
+                          </div>
+                        </div>
+                      ) : (
                         <div></div>
                       )}
                       <div>

@@ -22,7 +22,7 @@ import FieldModal from '../components/modals/field-modal';
 import EVModal from '../components/modals/ev-modal';
 import ConfirmDeleteModal from '../components/modals/confirm-delete-modal';
 import DeleteEVModal from '../components/modals/delete-ev-modal';
-
+import DuplicationModal from '../components/modals/duplication-modal';
 
 const electron = window.require('electron');
 
@@ -40,6 +40,8 @@ export const EnginePage = () => {
   const [regModal, setRegModal] = useState([false, false]);
   const [blockModal, setBlockModal] = useState([false, false]);
   const [fieldModal, setFieldModal] = useState([false, false]);
+  const [duplicationModal, setDuplicationModal] = useState(false);
+  const [duplicationModalData, setDuplicationModalData] = useState<any>({});
   const [evModal, setEvModal] = useState([false, false]);
   const [confirmModal, setConfirmModal] = useState(false);
   const [confirmModalData, setConfirmModalData] = useState<any>({});
@@ -49,8 +51,6 @@ export const EnginePage = () => {
   const [registerToEdit, setRegisterToEdit] = useState(null);
   const [funcToEdit, setFuncToEdit] = useState(null);
   const [blockToEdit, setBlockToEdit] = useState(null);
-
-  const ref = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let newMappingData = Array<MappingTableRowData>();
@@ -129,7 +129,8 @@ export const EnginePage = () => {
   // MAPPING TABLE
 
   const handleMappingRowClick = (rowData: MappingTableRowData) => {
-    if (rowData.registerId != null) {
+    console.log('ROW', rowData);
+    if (rowData.registerId != null && rowData.blockId == null) {
       setCurrentRegister(rowData.registerId);
       let newTabs = [...tabs];
       let newTab = createTab(rowData);
@@ -148,10 +149,13 @@ export const EnginePage = () => {
       setIsMapping(false);
       setMappingSelection(false);
       handleMappingSelectAll(false);
+    } else if (rowData.registerId == null && rowData.blockId != null) {
+      setBlockToEdit(rowData.blockId);
+      setBlockModal([true, true]);
     }
   };
 
-  const mappingTableHasRowSelected = () => { 
+  const mappingTableHasRowSelected = () => {
     let arr = mappingData.filter((row) => row.selected === true);
     return arr.length > 0 ? true : false;
   };
@@ -188,7 +192,7 @@ export const EnginePage = () => {
       setConfirmModalData({
         type: 'Register',
         action: () => {
-          Register.deleteById(rowData.registerId);;
+          Register.deleteById(rowData.registerId);
           setConfirmModal(false);
         },
         title: 'Register',
@@ -235,10 +239,31 @@ export const EnginePage = () => {
           setConfirmModal(false);
         },
         title: 'Block',
-        message:
-          'Watch out ! Are you sure you want destroy this block ?',
+        message: 'Watch out ! Are you sure you want destroy this block ?',
       });
       setConfirmModal(true);
+    });
+
+    electron.ipcRenderer.once('cm-duplicate-reg', (e, command) => {
+      setConfirmModalData({
+        type: 'Block',
+        action: () => {
+          Block.deleteById(rowData.blockId);
+          setConfirmModal(false);
+        },
+        title: 'Block',
+        message: 'Watch out ! Are you sure you want destroy this block ?',
+      });
+
+      setDuplicationModalData({
+        type: 'Register',
+        action: (nb: number) => {
+          Register.duplicate(rowData.registerId, nb);
+          setDuplicationModal(false);
+        },
+        title: 'Register',
+      });
+      setDuplicationModal(true);
     });
   };
 
@@ -287,8 +312,8 @@ export const EnginePage = () => {
 
   // TOOLBAR
 
-  const handleToolBarButtonClick = (mode: ButtonMode) => {  
-    switch (mode) { 
+  const handleToolBarButtonClick = (mode: ButtonMode) => {
+    switch (mode) {
       case ButtonMode.DeleteFunction:
         setMappingSelection(!mappingSelection);
         if (mappingSelection && mappingTableHasRowSelected()) {
@@ -378,7 +403,7 @@ export const EnginePage = () => {
         AddressSpace.deleteByIds(selectedFuncsIds);
         break;
       case 'BLOCK':
-        Block.deleteByIds(selectedRows.map((row) => row.blockId))
+        Block.deleteByIds(selectedRows.map((row) => row.blockId));
         setMappingSelectionMode('DEFAULT');
         break;
       case 'REG':
@@ -411,17 +436,24 @@ export const EnginePage = () => {
           editMode={funcModal[1]}
           selectedFunc={funcToEdit}
         />
-        <RegisterModal
-          open={regModal[0]}
-          setOpen={() => setRegModal([!regModal[0], regModal[1]])}
-          editMode={regModal[1]}
-          selectedReg={registerToEdit}
-        />
-        <BlockModal
-          open={blockModal[0]}
-          setOpen={() => setBlockModal([!blockModal[0], blockModal[1]])}
-          editMode={blockModal[1]}
-        />
+
+        {funcs.length > 0 && (
+          <>
+            <BlockModal
+              open={blockModal[0]}
+              setOpen={() => setBlockModal([!blockModal[0], blockModal[1]])}
+              editMode={blockModal[1]}
+              selectedBlock={blockToEdit}
+            />
+
+            <RegisterModal
+              open={regModal[0]}
+              setOpen={() => setRegModal([!regModal[0], regModal[1]])}
+              editMode={regModal[1]}
+              selectedReg={registerToEdit}
+            />
+          </>
+        )}
 
         <FieldModal
           open={fieldModal[0]}
@@ -441,6 +473,13 @@ export const EnginePage = () => {
           action={confirmModalData.action}
           title={confirmModalData.title}
           message={confirmModalData.message}
+        />
+        <DuplicationModal
+          open={duplicationModal}
+          setOpen={() => setDuplicationModal(!duplicationModal)}
+          type={duplicationModalData.type}
+          action={duplicationModalData.action}
+          title={duplicationModalData.title}
         />
         <EVModal
           open={evModal[0]}

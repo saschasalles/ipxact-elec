@@ -9,6 +9,7 @@ export class Project {
     private _description: string;
     private _version: number;
 
+
 	constructor(
         id: string,
         fileName: string, 
@@ -88,7 +89,8 @@ export class Project {
      * Setter id
      * @param {string} value
      */
-     public set id(value: string) {
+
+    public set id(value: string) {
 		this._projectID = value;
 	}
 

@@ -1,4 +1,4 @@
-import React, { Fragment, useRef, useState, useCallback, useEffect } from 'react';
+import React, { Fragment, useRef, useState, useCallback, useEffect, useLayoutEffect } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { updateFunction } from '../../store/functionActions';
 import { addBlock, updateBlock, removeBlocks } from '../../store/blockActions';
@@ -11,13 +11,11 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import { useAppSelector, useAppDispatch } from '../../hooks';
 import * as yup from 'yup';
 
-const electron = window.require('electron');
-const remote = electron.remote;
-
 type BlockModalProps = {
   open: boolean;
   setOpen: (open: boolean) => void;
   editMode: boolean;
+  selectedBlock?: string;
 };
 
 interface IBlockFormInputs {
@@ -32,7 +30,6 @@ interface IBlockFormInputs {
 const BlockModal = (props: BlockModalProps) => {
   const cancelButtonRef = useRef(null);
   const dispatch: Dispatch<any> = useAppDispatch();
-  const addBlockAction = useCallback((block: Block) => dispatch(addBlock(block)), [dispatch, addBlock]);
   const updateBlockAction = useCallback((block: Block) => dispatch(updateBlock(block)), [dispatch, updateBlock]);
   const updateFuncAction = useCallback(
     (addressSpace: AddressSpace) => dispatch(updateFunction(addressSpace)),
@@ -43,8 +40,8 @@ const BlockModal = (props: BlockModalProps) => {
   const blocks: readonly Block[] = useAppSelector((state) => state.blockReducer.blocks);
 
   const [selectedBlock, setSelectedBlock] = useState<Block>(null);
-  const [blockID, setBlockD] = useState('empty');
-  const [funcID, setFuncID] = useState<string>(funcs !== null && funcs.length > 0 && funcs[0].id);
+  const [blockID, setBlockID] = useState('empty');
+  const [funcID, setFuncID] = useState<string>(null);
 
   const schema = yup.object().shape({
     name: yup
@@ -58,7 +55,9 @@ const BlockModal = (props: BlockModalProps) => {
       .typeError('Base address is required')
       .matches(RegExp('0[xX][0-9a-fA-F]+'), 'Base address must be an hexadecimal value')
       .required('Base address is required')
-      .test('Base address value already exist', 'Base address value already exist', (value) => bkChecker(value, 'BASE_ADDRESS')),
+      .test('Base address value already exist', 'Base address value already exist', (value) =>
+        bkChecker(value, 'BASE_ADDRESS'),
+      ),
     size: yup
       .number()
       .typeError('Size is required')
@@ -85,7 +84,6 @@ const BlockModal = (props: BlockModalProps) => {
   });
 
   const bkChecker = (value: string, type: string): boolean => {
-    setFuncID(funcs[0].id);
     const funcBks = funcs.find((func) => func.id === funcID);
     if (funcBks != null && funcBks.blocks != null) {
       let filtered = Array<Block>();
@@ -103,7 +101,6 @@ const BlockModal = (props: BlockModalProps) => {
   };
 
   const onSubmit = (data: IBlockFormInputs) => {
-    console.log("submit");
     props.editMode ? editBlock(data) : createBlock(data);
     props.setOpen(false);
     resetInitialValues();
@@ -111,6 +108,7 @@ const BlockModal = (props: BlockModalProps) => {
   };
 
   const createBlock = (data: IBlockFormInputs) => {
+    
     let block: Block = new Block(
       uuidv4(),
       data.name,
@@ -118,13 +116,11 @@ const BlockModal = (props: BlockModalProps) => {
       data.size,
       data.dataWidth,
       data.description,
-      data.parentFunctionId,
+      funcID,
     );
-    console.log(block);
-    addBlockAction(block);
+    Block.add(block)
 
-    const funcToUpdate: AddressSpace = funcs.filter((f) => f.id === data.parentFunctionId)[0];
-    let blockArr: string[] = [block.id];
+    const funcToUpdate: AddressSpace = funcs.filter((f) => f.id === funcID)[0];
     let currentBlocks = funcToUpdate.blocks;
     currentBlocks.push(block.id);
     funcToUpdate.blocks = currentBlocks;
@@ -162,20 +158,20 @@ const BlockModal = (props: BlockModalProps) => {
 
   const resetInitialValues = () => {
     setValue('name', '');
-    setValue('parentFunctionId', '');
+    setValue('parentFunctionId', null);
     setValue('baseAddress', '');
     setValue('size', null);
     setValue('dataWidth', null);
     setValue('description', '');
     if (funcs.length > 0) {
       setSelectedBlock(null);
-      setBlockD('empty');
+      setBlockID('empty');
     }
   };
 
   const handleChange = (e: React.FormEvent) => {
     const target = e.target as HTMLSelectElement;
-    setBlockD(target.value);
+    setBlockID(target.value);
   };
 
   const handleFuncChange = (e: React.FormEvent) => {
@@ -207,17 +203,27 @@ const BlockModal = (props: BlockModalProps) => {
     }
   }, [blockID]);
 
+  useEffect(() => {
+    if (props.selectedBlock != null) {
+      setBlockID(props.selectedBlock);
+    }
+  }, [props.selectedBlock]);
+
+  useEffect(() => {
+    setFuncID(funcs[0].id)
+  }, [])
+
   return (
-    <Transition.Root show={props.open} as={Fragment}>
-      <Dialog
-        as="div"
-        static
-        className="fixed z-10 inset-0 overflow-y-auto h-screen"
-        initialFocus={cancelButtonRef}
-        open={props.open}
-        onClose={() => {}}
-      >
-        
+    funcs.length > 0 && (
+      <Transition.Root show={props.open} as={Fragment}>
+        <Dialog
+          as="div"
+          static
+          className="fixed z-10 inset-0 overflow-y-auto h-screen"
+          initialFocus={cancelButtonRef}
+          open={props.open}
+          onClose={() => {}}
+        >
           <div className="flex items-center justify-center min-h-screen pt-4 px-4 text-center sm:p-0">
             <Transition.Child
               as={Fragment}
@@ -254,8 +260,8 @@ const BlockModal = (props: BlockModalProps) => {
                         </label>
                         <div className="mt-1">
                           <select
-                            id="functions"
-                            name="functions"
+                            id="blocks"
+                            name="blocks"
                             className="mt-1 py-2 block w-full pl-3 pr-6 text-base border bg-blueGray-600 dark:bg-gray-700 dark:border-transparent dark:placeholder-gray-300 border-blueGray-600 text-white rounded-lg placeholder-blueGray-400 focus:outline-none focus:ring-lightBlue-400 focus:border-lightBlue-400 sm:text-sm"
                             value={blockID}
                             onChange={handleChange}
@@ -299,7 +305,7 @@ const BlockModal = (props: BlockModalProps) => {
                           <select
                             {...register('parentFunctionId', {
                               value:
-                                props.editMode && selectedBlock !== null
+                                props.editMode && selectedBlock != null
                                   ? selectedBlock.parentFunc
                                   : funcs.length > 0 && funcs[0].id,
                             })}
@@ -418,8 +424,9 @@ const BlockModal = (props: BlockModalProps) => {
               </div>
             </Transition.Child>
           </div>
-      </Dialog>
-    </Transition.Root>
+        </Dialog>
+      </Transition.Root>
+    )
   );
 };
 

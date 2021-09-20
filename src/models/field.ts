@@ -6,7 +6,7 @@ export class Field {
   private _name: string;
   private _defaultValue: number;
   private _description: string;
-  private _access: Access;
+  private _access: Access | string;
   private _posh: number;
   private _posl: number;
   private _enumeratedValues: string[];
@@ -75,9 +75,9 @@ export class Field {
 
   /**
    * Getter access
-   * @return {Access}
+   * @return {Access | string}
    */
-  public get access(): Access {
+  public get access(): Access | string {
     return this._access;
   }
 
@@ -147,9 +147,9 @@ export class Field {
 
   /**
    * Setter access
-   * @param {Access} value
+   * @param {Access | string} value
    */
-  public set access(value: Access) {
+  public set access(value: Access | string) {
     this._access = value;
   }
 

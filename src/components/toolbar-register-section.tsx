@@ -6,36 +6,45 @@ import { TrashIcon } from '@heroicons/react/outline';
 import { CalculatorIcon } from '@heroicons/react/solid';
 import { ButtonMode } from '../models/button-mode';
 import { useAppSelector } from '../hooks';
-import { Field } from "../models/field";
-import { EnumeratedValue } from "../models/enumerated-value";
-import { Register } from "../models/register"
+import { Field } from '../models/field';
+import { EnumeratedValue } from '../models/enumerated-value';
+import { Register } from '../models/register';
 
 type ToolBarRegisterProps = {
   onButtonClick: (mode: ButtonMode) => void;
-  register?: string
+  register?: string;
 };
 
 export const ToolbarRegisterSection = (props: ToolBarRegisterProps) => {
   const storeRegs: readonly Register[] = useAppSelector((state) => state.registerReducer.registers);
   const storeFields: readonly Field[] = useAppSelector((state) => state.fieldReducer.fields);
   const storeEVS: readonly EnumeratedValue[] = useAppSelector((state) => state.enumeratedValueReducer.enumeratedValues);
-  const [currentReg, setCurrentRegister] = useState<Register>(storeRegs.find(r => r.id === props.register))
-  const [disableEV, setDisableEV] = useState(true)
+  const [currentReg, setCurrentRegister] = useState<Register>(storeRegs.find((r) => r.id === props.register));
+  const [disableEV, setDisableEV] = useState(true);
 
   useEffect(() => {
     if (props.register != null) {
-      let reg = storeRegs.find(r => r.id === props.register)
-      if (reg != null && reg.fields != null) {
-        setCurrentRegister(reg)
-      
-        reg.fields.forEach(f => {
-          let fetchedFields = storeFields.find(fi => fi.id === f)
-          fetchedFields.enumeratedValues.length > 0 ? setDisableEV(false) : setDisableEV(true)
-      })
-      } 
-      
+      fetchData(props.register, toggleEVS);
     }
-  }, [props.register, storeEVS])
+  }, [props.register, storeEVS]);
+
+  const toggleEVS = (length: number) => {
+    console.log("lenght", length)
+    length > 0 ? setDisableEV(false) : setDisableEV(true);
+  };
+
+  const fetchData = (regId: string, callback: (length: number) => void) => {
+    let reg = storeRegs.find((r) => r.id === regId);
+    if (reg != null && reg.fields != null) {
+      setCurrentRegister(reg);
+      let length = 0
+      reg.fields.forEach((f) => {
+        let fetchedFields = storeFields.find((fi) => fi.id === f);
+        length += fetchedFields.enumeratedValues.length
+      });
+      callback(length);
+    }
+  };
 
   return (
     <>
@@ -92,7 +101,7 @@ export const ToolbarRegisterSection = (props: ToolBarRegisterProps) => {
             text="Edit"
             textColor="amber-400"
             icon={PencilIcon}
-            disabled={currentReg != null && currentReg.fields == null || currentReg.fields.length === 0}
+            disabled={(currentReg != null && currentReg.fields == null) || currentReg.fields.length === 0}
           />
           <Button
             onButtonClick={props.onButtonClick}
@@ -103,7 +112,7 @@ export const ToolbarRegisterSection = (props: ToolBarRegisterProps) => {
             text="Delete"
             textColor="red-400"
             icon={TrashIcon}
-            disabled={currentReg != null && currentReg.fields == null || currentReg.fields.length === 0}
+            disabled={(currentReg != null && currentReg.fields == null) || currentReg.fields.length === 0}
           />
         </div>
       </section>
@@ -119,7 +128,7 @@ export const ToolbarRegisterSection = (props: ToolBarRegisterProps) => {
             text="Add"
             textColor="emerald-400"
             icon={PlusCircleIcon}
-            disabled={currentReg != null && currentReg.fields == null || currentReg.fields.length === 0}
+            disabled={(currentReg != null && currentReg.fields == null) || currentReg.fields.length === 0}
           />
           <Button
             onButtonClick={props.onButtonClick}

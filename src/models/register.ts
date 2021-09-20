@@ -1,22 +1,24 @@
 import { Access } from './access';
-import { removeRegisters as removeRegistersAction, addRegister as addRegisterAction } from '../store/registerActions';
-import { removeFields } from '../store/fieldActions';
-import { removeEVS } from '../store/evActions';
+import { removeRegisters as removeRegistersAction, addRegister as addRegisterAction, addRegister, updateRegister } from '../store/registerActions';
+import { addField, removeFields, updateField } from '../store/fieldActions';
+import { addEV, removeEVS } from '../store/evActions';
 import { updateFunction } from '../store/functionActions';
 import { Field } from '../models/field';
 import { EnumeratedValue } from '../models/enumerated-value';
 import { AddressSpace } from '../models/address-space';
 import { store } from '../store/store';
-
+import { v4 as uuidv4 } from 'uuid';
+import { forEach } from 'lodash';
 
 
 
 export class Register {
+
   private _id: string;
   private _parentFunctionId: string;
   private _name: string;
   private _address: number;
-  private _access: Access;
+  private _access: Access | string;
   private _description: string;
   private _defaultValue: number;
   private _mask: number;
@@ -24,8 +26,9 @@ export class Register {
   private _dimOffset: number;
   private _isHidden: boolean;
   private _duplicateNb?: number;
-  private _duplicateId?: number;
+  private _parentOfDuplicate?: string;
   private _fields?: string[];
+  private _lastDuplicateIndex?: number;
 
   constructor(
     id: string,
@@ -40,8 +43,9 @@ export class Register {
     dimOffset: number,
     isHidden: boolean,
     duplicateNb?: number,
-    duplicateId?: number,
+    parentOfDuplicate?: string,
     fields?: string[],
+    lastDuplicateIndex?: number
   ) {
     this._id = id;
     this._parentFunctionId = parentFunctionId;
@@ -54,9 +58,10 @@ export class Register {
     this._dim = dim;
     this._dimOffset = dimOffset;
     this._duplicateNb = duplicateNb;
-    this._duplicateId = duplicateId;
+    this._parentOfDuplicate = parentOfDuplicate;
     this._isHidden = isHidden;
     this._fields = fields;
+    this._lastDuplicateIndex = lastDuplicateIndex;
   }
 
   /**
@@ -93,9 +98,9 @@ export class Register {
 
   /**
    * Getter access
-   * @return {Access}
+   * @return {Access | string}
    */
-  public get access(): Access {
+  public get access(): Access | string {
     return this._access;
   }
 
@@ -157,6 +162,32 @@ export class Register {
   }
 
   /**
+ * Getter duplicateNb
+ * @return {number}
+ */
+   public get duplicateNb(): number {
+    return this._duplicateNb;
+  }
+
+
+/**
+ * Getter parentOfDuplicate
+ * @return {number}
+ */
+     public get parentOfDuplicate(): string {
+      return this._parentOfDuplicate;
+    }
+
+
+/**
+ * Getter lastDuplicateIndex
+ * @return {number}
+ */
+   public get lastDuplicateIndex(): number {
+    return this._lastDuplicateIndex;
+  }
+
+  /**
    * Setter id
    * @param {string} value
    */
@@ -181,6 +212,15 @@ export class Register {
   }
 
   /**
+ * Setter description
+ * @param {string} value
+ */
+    public set parentOfDuplicate(value: string) {
+    this._parentOfDuplicate = value;
+  }
+  
+
+  /**
    * Setter address
    * @param {number} value
    */
@@ -190,9 +230,9 @@ export class Register {
 
   /**
    * Setter access
-   * @param {Access} value
+   * @param {Access | string} value
    */
-  public set access(value: Access) {
+  public set access(value: Access | string) {
     this._access = value;
   }
 
@@ -252,6 +292,22 @@ export class Register {
     this._fields = value;
   }
 
+  /**
+ * Setter duplicateNb
+ * @param {number} value
+ */
+  public set duplicateNb(value: number) {
+    this._duplicateNb = value;
+  }
+
+  /**
+ * Setter lastDuplicateIndex
+ * @param {number} value
+ */
+   public set lastDuplicateIndex(value: number) {
+    this._lastDuplicateIndex = value;
+  }
+
   static add = (reg: Register) => {
     store.dispatch(addRegisterAction(reg));
   };
@@ -264,8 +320,14 @@ export class Register {
     const storeEVS = currentState.enumeratedValueReducer.enumeratedValues
 
     const reg = storeRegs.find((reg: Register) => reg.id === regId);
-    console.log(reg);
+
     if (reg != null) {
+      // Decrement reg parent duplicateNb if reg have been duplicated
+       
+      const parentReg = storeRegs.find((r: Register) => reg.parentOfDuplicate === r.id)
+
+
+
       let associatedFunc = storeFuncs.find((f: AddressSpace) => f.id === reg.parentFunctionId);
       if (associatedFunc != null) {
         // detach from parent func
@@ -278,8 +340,8 @@ export class Register {
             let field = storeFields.find((fi: Field) => f === fi.id);
             if (field != null) {
               if (field.enumeratedValues != null && field.enumeratedValues.length > 0) {
-                const fetchedEV = storeEVS.find((ev: EnumeratedValue) => ev.parentFieldID === field.id);
-                store.dispatch(removeEVS([fetchedEV]));
+                const fetchedEVS = storeEVS.filter((ev: EnumeratedValue) => ev.parentFieldID === field.id);
+                store.dispatch(removeEVS([fetchedEVS]));
               }
             // delete child fields  
               store.dispatch(removeFields([field]));
@@ -290,6 +352,12 @@ export class Register {
       // detach his child fields and finaly delete reg
       reg.fields = [];
       store.dispatch(removeRegistersAction([reg]));
+
+      if (parentReg != null) {
+        parentReg.duplicateNb -= 1
+        store.dispatch(updateRegister(parentReg));
+        console.log("at del", parentReg)
+      }
     }
   }
 
@@ -301,6 +369,93 @@ export class Register {
     regIds.forEach(regId => {
       Register.deleteById(regId)
     })
+  }
+
+  static duplicate = (regId: string, nbDuplicate: number) => {
+    const currentState = store.getState();
+    const storeRegs = currentState.registerReducer.registers
+    const storeFuncs = currentState.functionReducer.addressSpaces
+    const storeFields = currentState.fieldReducer.fields
+    const storeEVS = currentState.enumeratedValueReducer.enumeratedValues
+
+    const reg = storeRegs.find((reg: Register) => reg.id === regId);
+    
+    if (reg != null) {
+      let associatedFunc = storeFuncs.find((f: AddressSpace) => f.id === reg.parentFunctionId);
+      if (associatedFunc != null) {
+      
+        for(let i = reg.duplicateNb; i < reg.duplicateNb + nbDuplicate; i++) {
+          console.log(`nb: ${i}`)
+          const newRegister = new Register(
+            uuidv4(),
+            reg.parentFunctionId,
+            reg.name + `_${i}`,
+            reg.address,
+            reg.access as Access,
+            reg.description,
+            reg.defaultValue,
+            reg.mask,
+            reg.dim,
+            reg.dimOffset,
+            reg.isHidden,
+            0,
+            reg.id,
+            [],
+            0
+          )
+          
+
+          if (reg.fields != null && reg.fields.length > 0) {
+            reg.fields.forEach((f: string) => {
+              let field = storeFields.find((fi: Field) => f === fi.id) as Field;
+              if (field != null) {
+                const newField = new Field(
+                  uuidv4(),
+                  newRegister.id,
+                  field.name,
+                  field.defaultValue,
+                  field.description,
+                  field.access as Access,
+                  field.posh,
+                  field.posl,
+                  []
+                )
+
+                if (field.enumeratedValues != null && field.enumeratedValues.length > 0) {
+                  const fetchedEVS = storeEVS.filter((ev: EnumeratedValue) => ev.parentFieldID === field.id);
+                  fetchedEVS.forEach((ev: EnumeratedValue) => {
+                    const newEV = new EnumeratedValue(
+                      uuidv4(),
+                      newField.id,
+                      ev.name,
+                      ev.value,
+                      ev.description
+                    )
+
+                    store.dispatch(addEV(newEV));
+                    newField.enumeratedValues.push(newEV.id)
+                  })
+                }
+                
+                
+                store.dispatch(addField(newField));
+                newRegister.fields.push(newField.id)
+              }
+            });
+          }
+          
+          associatedFunc.registers.push(newRegister.id);
+          store.dispatch(updateFunction(associatedFunc));
+          store.dispatch(addRegister(newRegister));
+          
+        }
+        
+      }
+      reg.duplicateNb += nbDuplicate
+      store.dispatch(updateRegister(reg));
+      console.log("when dup", reg)
+    }
+
   }
 
 

@@ -9,18 +9,50 @@ import { AddressSpace } from '../models/address-space';
 import { v4 as uuidv4 } from 'uuid';
 import { addProject as addProjectAction } from '../store/projectActions';
 import { addFunction as addFunctionAction } from '../store/functionActions';
-import { addRegister } from '../store/registerActions';
 import { addField as addFieldAction } from '../store/fieldActions';
-import { PythonShell } from 'python-shell';
+
+export const accessFormater = (accessVal?: Access, stringVal?: string): string | Access => {
+  if (accessVal != null && stringVal == null) {
+    switch (+accessVal) {
+      case Access.Read:
+        return 'read-only';
+      case Access.Write:
+        return 'write-only';
+      case Access.ReadWrite:
+        return 'read-write';
+      case Access.ReadWriteOnce:
+        return 'read-writeOnce';
+      case Access.WriteOnce:
+        return 'writeOnce';
+      default:
+        return 'read-only';
+    }
+  } else if (accessVal == null && stringVal != null) {
+    switch (stringVal) {
+      case 'read-only':
+        return Access.Read;
+      case 'write-only':
+        return Access.Write;
+      case 'read-write':
+        return Access.ReadWrite;
+      case 'read-writeOnce':
+        return Access.ReadWriteOnce;
+      case 'writeOnce':
+        return Access.WriteOnce;
+      default:
+        return Access.Read;
+    }
+  }
+};
 
 export const fetchItems = (data: any): Project => {
   const project = new Project(
     uuidv4(),
-    data.project.name,
+    data.project.fileName,
     data.project.path,
     data.project.addressUnitBits,
     data.project.name,
-    data.project.vendor,
+    data.project.company,
     data.project.description,
     data.project.version,
   );
@@ -48,16 +80,17 @@ export const fetchItems = (data: any): Project => {
           reg.parentFuncId,
           reg.name,
           reg.addressOffset,
-          reg.access,
+          accessFormater(null, reg.access) as Access,
           reg.description,
           0,
           0,
           0,
           0,
           false,
-          null,
+          reg.duplicateNb != null ? reg.duplicateNb : 0,
           null,
           [],
+          reg.lastDuplicateIndex
         );
 
         fetchedFunc.registers.push(fetchedReg.id);
@@ -70,11 +103,21 @@ export const fetchItems = (data: any): Project => {
               field.name,
               0,
               field.description,
-              Access.Read,
+              accessFormater(null, field.access) as Access,
               field.bitOffset + field.bitWidth - 1,
               field.bitOffset,
               [],
             );
+
+            const fetchedEvs = data.evs.filter((ev: any) => ev.parentFieldId === fetchedField.id);
+            if (fetchedEvs != null) {
+              fetchedEvs.forEach((ev: any) => {
+                const fetchedEv = new EnumeratedValue(ev.id, ev.parentFieldId, ev.name, ev.value, ev.description);
+                fetchedField.enumeratedValues.push(fetchedEv.id);
+                EnumeratedValue.add(fetchedEv);
+              });
+            }
+
             fetchedReg.fields.push(fetchedField.id);
             store.dispatch(addFieldAction(fetchedField));
           });
@@ -82,7 +125,7 @@ export const fetchItems = (data: any): Project => {
         Register.add(fetchedReg);
       });
     }
-    console.log("fetchable", data.blocks)
+
     const fetchedBks = data.blocks.filter((bk: any) => bk.parentFuncId === fetchedFunc.id);
     if (fetchedBks != null) {
       fetchedBks.forEach((bk: any) => {
@@ -95,6 +138,5 @@ export const fetchItems = (data: any): Project => {
     store.dispatch(addFunctionAction(fetchedFunc));
   });
 
-  console.log(store.getState().projectReducer);
   return project;
 };

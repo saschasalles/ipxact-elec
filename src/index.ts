@@ -1,5 +1,8 @@
-import { app, BrowserWindow, Menu, ipcMain, remote } from 'electron';
-import { PythonShell } from 'python-shell';
+import { app, BrowserWindow, Menu, ipcMain, session } from 'electron';
+import { fstat } from 'fs';
+import { platform } from 'os';
+import path from 'path';
+import { StringSchema } from 'yup';
 
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 
@@ -9,6 +12,7 @@ if (require('electron-squirrel-startup')) {
 }
 
 const isMac = process.platform === 'darwin';
+const globalRessourcePath = path.join(app.getAppPath(), '.webpack/renderer', 'static/decoder/mac/parser');
 
 const createWindow = (): BrowserWindow => {
   // and load the index.html of the app.
@@ -28,7 +32,7 @@ const createWindow = (): BrowserWindow => {
   });
 
   mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
-  mainWindow.webContents.openDevTools();
+  // mainWindow.webContents.openDevTools(); TOGGLE BY DEFAULT IN DEV MODE
 
   mainWindow.on('close', function (e) {
     const choice = require('electron').dialog.showMessageBoxSync(this, {
@@ -76,6 +80,13 @@ ipcMain.on('show-reg-context-menu', (event) => {
       label: 'Delete Register',
       click: () => {
         event.sender.send('cm-delete-reg', 'delete-reg');
+      },
+    },
+    { type: 'separator' },
+    {
+      label: 'Duplicate Register',
+      click: () => {
+        event.sender.send('cm-duplicate-reg', 'duplicate-reg');
       },
     },
   ];
@@ -255,14 +266,88 @@ const createMenu = (): Electron.MenuItemConstructorOptions[] => {
   return templateMenu;
 };
 
-
 // App life cycle binded events
 
 app.on('ready', () => {
+  session.defaultSession.protocol.registerFileProtocol('static', (request, callback) => {
+    const fileUrl = request.url.replace('static://', '');
+    const filePath = path.join(app.getAppPath(), '.webpack/renderer', fileUrl);
+    callback(filePath);
+    verifyAccess(globalRessourcePath);
+  });
+
+  if (BrowserWindow.getAllWindows().length === 0) {
+    createWindow();
+  }
+
   let templateMenu = createMenu();
   let menu = Menu.buildFromTemplate(templateMenu);
   Menu.setApplicationMenu(menu);
+
+  // Signals going to front-end
+  
+  ipcMain.on('parse-xml', async (event, args) => {
+    let options = {
+      args: [args],
+    };
+    parse(options, false);
+  });
+
+  ipcMain.on('save-project', async (event, args) => {
+    console.log(args[0]);
+    const stringified = JSON.stringify(args[0]);
+    let options = {
+      args: [args[0].project._filePath, stringified],
+    };
+
+    parse(options, true);
+  });
+
+  ipcMain.on('save-as', async (event, args) => {
+    const stringified = JSON.stringify(args[0]);
+    let options = {
+      args: [args[1], stringified],
+    };
+
+    parse(options, true);
+  });
+
+  const parse = (options: any, write: boolean) => {
+    try {
+      var execFile = require('child_process').execFile;
+      execFile(globalRessourcePath, options.args, function (err: Error, results: any) {
+        if (err) throw BrowserWindow.getAllWindows()[0].webContents.send('parse-error', err.message);
+        if (write == false) {
+          const strRes = results.toString();
+          try {
+            console.log(strRes);
+            const data = JSON.parse(strRes);
+            BrowserWindow.getAllWindows()[0].webContents.send('add-parsed-items', data);
+          } catch (error) {
+            BrowserWindow.getAllWindows()[0].webContents.send('parse-error', error);
+          }
+        }
+      });
+    } catch (err) {
+      BrowserWindow.getAllWindows()[0].webContents.send('parse-error', err);
+    }
+  };
 });
+
+const verifyAccess = (filePath: string) => {
+  let exec = require('child_process').exec;
+  if (isMac) {
+    exec(`chmod -R 777 ${filePath}`, function (err: Error, results: any) {
+      if (err) throw err;
+      console.log(results);
+    });
+  } else if (process.platform == 'win32') {
+    exec(`cacls ${filePath} /g everyone:f `, function (err: Error, results: any) {
+      if (err) throw err;
+      console.log(results);
+    });
+  }
+};
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
@@ -270,63 +355,9 @@ app.on('window-all-closed', () => {
   }
 });
 
-app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
-  }
-});
-
 app.on('open-file', (event, path) => {
   console.log('PATH', path);
-  BrowserWindow
-    .getFocusedWindow()
-    .webContents
-    .send('open-recent-file', path);
+  BrowserWindow.getFocusedWindow().webContents.send('open-recent-file', path);
 });
 
 
-
-// Signals going to front-end
-
-ipcMain.on('parse-xml', async (event, args) => {
-  let options = {
-    args: [args],
-  };
-  parse(options, false);
-});
-
-ipcMain.on('save-project', async (event, args) => {
-  console.log(args[0]);
-  const stringified = JSON.stringify(args[0]);
-  let options = {
-    args: [args[0].project._filePath, stringified],
-  };
-
-  parse(options, true);
-});
-
-ipcMain.on('save-as', async (event, args) => {
-  const stringified = JSON.stringify(args[0]);
-  let options = {
-    args: [args[1], stringified],
-  };
-
-  parse(options, true);
-});
-
-
-const parse = (options: {}, write: boolean) => {
-  PythonShell.run('./src/python/parser.py', options, function (err, results) {
-    if (err) throw err;
-    if (write == false) {
-      const strRes = results.toString();
-      try {
-        console.log(strRes);
-        const data = JSON.parse(strRes);
-        BrowserWindow.getFocusedWindow().webContents.send('add-parsed-items', data);
-      } catch (error) {
-        console.log(error);
-      }
-    }
-  });
-};

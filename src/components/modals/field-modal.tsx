@@ -66,12 +66,12 @@ const FieldModal = (props: FieldModalProps) => {
   useEffect(() => {
     if (props.editMode) {
       if (fieldID !== 'empty') {
-        const selected = storeFields.filter((f) => f.id === fieldID)[0];
+        const selected = storeFields.find((f) => f.parentRegID === props.register);
         setValue('name', selected.name);
         setValue('defaultValue', '0x' + selected.defaultValue.toString(16));
         setValue('posh', selected.posh);
         setValue('posl', selected.posl);
-        setValue('access', Access[selected.access]);
+        setValue('access', Access[selected.access as number]);
         setValue('description', selected.description);
         setSelectedField(selected);
       } else {
@@ -203,12 +203,12 @@ const FieldModal = (props: FieldModalProps) => {
       Access[fAccess],
       data.posh,
       data.posl,
-      []
+      [],
     );
 
     addFieldAction(field);
     const regToUpdate: Register = regs.find((r) => r.id === props.register);
-    console.log("reg -> ", regToUpdate)
+    console.log('reg -> ', regToUpdate);
     let currentFields = regToUpdate.fields;
     currentFields.push(field.id);
     regToUpdate.fields = currentFields;
@@ -307,11 +307,13 @@ const FieldModal = (props: FieldModalProps) => {
                           onChange={handleChange}
                         >
                           <option value="empty">Choose a field</option>
-                          {storeFields.map((f, idx) => (
-                            <option key={idx} value={f.id}>
-                              {f.name}
-                            </option>
-                          ))}
+                          {storeFields
+                            .filter((fi) => fi.parentRegID === props.register)
+                            .map((f, idx) => (
+                              <option key={idx} value={f.id}>
+                                {f.name}
+                              </option>
+                            ))}
                         </select>
                       </div>
                     </div>
@@ -377,7 +379,7 @@ const FieldModal = (props: FieldModalProps) => {
                           {...register('access', {
                             value:
                               props.editMode && selectedField !== null
-                                ? Access[selectedField.access]
+                                ? Access[selectedField.access as number]
                                 : Access[Access.Read],
                           })}
                           disabled={props.editMode && fieldID === 'empty'}

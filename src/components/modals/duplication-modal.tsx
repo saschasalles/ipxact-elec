@@ -1,19 +1,24 @@
 import React, { Fragment, useState } from 'react';
 import { Dialog, Portal, Transition } from '@headlessui/react';
-import { ExclamationIcon, XIcon } from '@heroicons/react/outline';
+import { DuplicateIcon, XIcon } from '@heroicons/react/outline';
 
-type ConfirmDeleteModalProps = {
+type DuplicationModalProps = {
   open: boolean;
   setOpen: (open: boolean) => void;
-  action: () => void;
+  action: (nbDup: number) => void;
   title: string;
-  message: string;
   type: string;
-  closeMode?: boolean;
-  actionClose?: () => void;
 };
 
-const ConfirmDeleteModal = (props: ConfirmDeleteModalProps) => {
+const DuplicationModal = (props: DuplicationModalProps) => {
+  const [selectedNb, setSelectedNb] = useState(1);
+
+
+  const handleChange = (e: React.FormEvent) => {
+    const target = e.target as HTMLInputElement;
+    setSelectedNb(parseInt(target.value));
+  };
+
   return (
     <Transition.Root show={props.open} as={Fragment}>
       <Dialog
@@ -56,45 +61,37 @@ const ConfirmDeleteModal = (props: ConfirmDeleteModalProps) => {
                   <XIcon className="h-6 w-6" aria-hidden="true" />
                 </button>
               </div>
-              <div className="sm:flex sm:items-start">
-                <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12">
-                  <ExclamationIcon className="h-10 w-10 text-red-400" aria-hidden="true" />
+              <div className="block">
+                <div className="mx-auto items-center justify-center h-12 w-12">
+                  <DuplicateIcon className="h-10 w-10 text-white" aria-hidden="true" />
                 </div>
-                <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                  <Dialog.Title as="h3" className="text-lg leading-6 font-semibold text-white">
-                    Delete {props.type}
-                  </Dialog.Title>
-                  <div className="mt-2">
-                    <p className="text-sm text-white">{props.message}</p>
+                <div>
+                  <div className="text-center w-auto py-2">
+                    <Dialog.Title as="h3" className="text-lg leading-6 font-semibold text-white">
+                      Duplicate {props.type}
+                    </Dialog.Title>
                   </div>
+                    <input
+                      defaultValue={1}
+                      onChange={handleChange}
+                      type="number"
+                      name="dupNb"
+                      id="dupNb"
+                      className="text-white focus:outline-none focus:ring-2 focus:ring-sky-300 w-full sm:text-sm border-transparent rounded-lg bg-blueGray-600 dark:bg-gray-700 placeholder-gray-300 mt-3"
+                      placeholder="1"
+                      min={1}
+                    />
                 </div>
               </div>
-              <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
-                {props.closeMode && (
-                  <button
-                    type="button"
-                    className="w-full inline-flex justify-center rounded-lg shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-400 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm"
-                    onClick={() => props.actionClose()}
-                  >
-                    Close anyway
-                  </button>
-                )}
+              <div className="mx-auto sm:mt-4 sm:flex sm:flex-row-reverse">
                 <button
-                  type="button"
-                  className={`w-full inline-flex justify-center rounded-lg shadow-sm px-4 py-2 ${
-                    props.closeMode ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-red-600 hover:bg-red-400'
+                  disabled={selectedNb <= 0 || selectedNb == null || selectedNb == NaN}
+                  form="dup-form"
+                  className={`w-full inline-flex justify-center rounded-lg shadow-sm px-4 py-2 bg-indigo-600 disabled:opacity-50 hover:bg-emerald-500' 
                   } text-base font-medium text-white focus:outline-none sm:ml-3 sm:w-auto sm:text-sm`}
-                  onClick={() => props.action()}
+                  onClick={() => props.action(selectedNb)}
                 >
-                  {props.closeMode ? 'Save & Close' : 'Delete'}
-                </button>
-                
-                <button
-                  type="button"
-                  className="mt-3 w-full inline-flex justify-center rounded-lg bg-blueGray-700 dark:bg-gray-800 px-4 py-2 text-base font-medium text-gray-200 hover:text-gray-50 focus:outline-none sm:mt-0 sm:w-auto sm:text-sm"
-                  onClick={() => props.setOpen(false)}
-                >
-                  Cancel
+                  Duplicate
                 </button>
               </div>
             </div>
@@ -105,4 +102,4 @@ const ConfirmDeleteModal = (props: ConfirmDeleteModalProps) => {
   );
 };
 
-export default ConfirmDeleteModal;
+export default DuplicationModal;

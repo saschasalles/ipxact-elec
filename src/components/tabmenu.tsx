@@ -1,9 +1,8 @@
 import React from "react"
 import { XCircleIcon } from "@heroicons/react/solid"
 import { Tab } from "../models/tab-model";
-import { MappingTableRowData } from "../models/mapping-row-model";
-import { motion } from "framer-motion";
-import { MouseWheelInputEvent } from "electron/main";
+
+
 
   function classNames(...classes: string[]) {
     return classes.filter(Boolean).join(' ')

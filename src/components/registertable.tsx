@@ -128,7 +128,7 @@ const RegisterTable = (props: RegisterTableProps) => {
           `[${field.posh}:${field.posl}]`,
           field.posh - field.posl + 1,
           field.defaultValue,
-          Access[field.access],
+          Access[field.access as number],
           field.description,
           evString,
           false,
@@ -161,7 +161,7 @@ const RegisterTable = (props: RegisterTableProps) => {
                       )}
                       <th
                         scope="col"
-                        className={`px-6 py-3 text-left select-none text-xs font-semibold bg-blueGray-500 dark:bg-gray-800 text-white uppercase tracking-wider sticky top-0 shadow-xl ${
+                        className={`px-6 py-3 text-left select-none text-xs font-semibold bg-blueGray-500 dark:bg-gray-700 text-white uppercase tracking-wider sticky top-0 shadow-xl ${
                           !selection && 'rounded-tl-xl'
                         }`}
                       >
@@ -169,37 +169,37 @@ const RegisterTable = (props: RegisterTableProps) => {
                       </th>
                       <th
                         scope="col"
-                        className="px-6 py-3 w-1/6 text-left text-xs font-semibold bg-blueGray-500 dark:bg-gray-800 text-white uppercase tracking-wider sticky top-0 filter drop-shadow-2xl"
+                        className="px-6 py-3 w-1/6 text-left text-xs font-semibold bg-blueGray-500 dark:bg-gray-700 text-white uppercase tracking-wider sticky top-0 filter drop-shadow-2xl"
                       >
                         Field Name
                       </th>
                       <th
                         scope="col"
-                        className="px-6 py-3 text-left text-xs font-semibold bg-blueGray-500 dark:bg-gray-800 text-white uppercase tracking-wider sticky top-0 filter drop-shadow-2xl"
+                        className="px-6 py-3 text-left text-xs font-semibold bg-blueGray-500 dark:bg-gray-700 text-white uppercase tracking-wider sticky top-0 filter drop-shadow-2xl"
                       >
                         Size
                       </th>
                       <th
                         scope="col"
-                        className="px-6 py-3 text-left text-xs font-semibold bg-blueGray-500 dark:bg-gray-800 text-white uppercase tracking-wider sticky top-0 filter drop-shadow-2xl"
+                        className="px-6 py-3 text-left text-xs font-semibold bg-blueGray-500 dark:bg-gray-700 text-white uppercase tracking-wider sticky top-0 filter drop-shadow-2xl"
                       >
                         Default Value
                       </th>
                       <th
                         scope="col"
-                        className="px-6 py-3 text-left text-xs font-semibold bg-blueGray-500 dark:bg-gray-800 text-white uppercase tracking-wider sticky top-0 filter drop-shadow-2xl"
+                        className="px-6 py-3 text-left text-xs font-semibold bg-blueGray-500 dark:bg-gray-700 text-white uppercase tracking-wider sticky top-0 filter drop-shadow-2xl"
                       >
                         Access
                       </th>
                       <th
                         scope="col"
-                        className="px-6 w-1/2 py-3 text-left text-xs font-semibold bg-blueGray-500 dark:bg-gray-800 text-white uppercase tracking-wider sticky top-0 filter drop-shadow-2xl "
+                        className="px-6 w-1/2 py-3 text-left text-xs font-semibold bg-blueGray-500 dark:bg-gray-700 text-white uppercase tracking-wider sticky top-0 filter drop-shadow-2xl "
                       >
                         Description
                       </th>
                       <th
                         scope="col"
-                        className="px-6 w-1/2 py-3 text-left text-xs font-semibold bg-blueGray-500 dark:bg-gray-800 text-white uppercase tracking-wider sticky top-0 filter drop-shadow-2xl rounded-tr-xl"
+                        className="px-6 w-1/2 py-3 text-left text-xs font-semibold bg-blueGray-500 dark:bg-gray-700 text-white uppercase tracking-wider sticky top-0 filter drop-shadow-2xl rounded-tr-xl"
                       >
                         Enumerated Values
                       </th>

@@ -95,6 +95,7 @@ const FuncModal = (props: FuncModalProps) => {
       null,
       null,
       [] as string[],
+      [] as string[],
     );
     AddressSpace.add(addressSpace)
   };

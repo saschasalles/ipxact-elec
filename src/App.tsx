@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { EnginePage } from './pages/main';
 import { Transition } from '@headlessui/react';
 import { Button } from './components/button';
-import { DocumentTextIcon, PlusCircleIcon } from '@heroicons/react/solid';
+import { DocumentTextIcon, PlusCircleIcon, ArrowDownIcon } from '@heroicons/react/solid';
 import CreateModal from './components/modals/create-modal';
 import { menuItemsEnabler, setElectronTitle } from './helpers/electron-helper';
 import { useDispatch } from 'react-redux';
@@ -12,8 +12,14 @@ import { ResetAppAction } from './store/store';
 import { fetchItems } from './helpers/ipxact-helper';
 import { store } from './store/store';
 import { Project } from './models/project';
-import { useAppSelector } from '../src/hooks';
 import ConfirmDeleteModal from '../src/components/modals/confirm-delete-modal';
+import Dropzone from 'react-dropzone';
+import LoadingModal from './components/modals/loading-modal';
+import { accessFormater } from './helpers/ipxact-helper';
+import { Register } from './models/register';
+import { Field } from './models/field';
+import { Access } from './models/access';
+import { cloneDeep } from 'lodash';
 
 const electron = window.require('electron');
 
@@ -24,7 +30,10 @@ const App = () => {
   const [editModal, setEditModal] = useState([false, false]);
   const [confirmClose, setConfirmClose] = useState(false);
   const [withRecent, setWithRecent] = useState(false);
-  const projects: readonly Project[] = useAppSelector((state) => state.projectReducer.projects);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showEnterAnim, setShowEnterAnim] = useState(false);
+  const [isError, setIsError] = useState([false, '']);
+
   const [selectedProject, setSelectedProject] = useState<Project>(null);
 
   const dispatch: Dispatch<any> = useDispatch();
@@ -39,22 +48,30 @@ const App = () => {
         })
         .then((result) => {
           if (result.canceled === false) {
+            setShowEnterAnim(false);
+            setIsLoading(true);
             setPath(result.filePaths);
             electron.ipcRenderer.send('parse-xml', result.filePaths[0]);
-            electron.remote.app.addRecentDocument(result.filePaths[0]);
           }
         })
         .catch((err) => {
           console.log(err);
         });
     } else {
+      setShowEnterAnim(false);
+      setIsLoading(true);
       electron.ipcRenderer.send('parse-xml', path);
-      setEngineMode(true);
     }
   };
 
-  const handleEditProject = () => {
-    setSelectedProject(projects[0]);
+  const fetchProject = (callback: (project: Project) => void) => {
+    const state = store.getState();
+    const storeProjects = state.projectReducer.projects;
+    callback(storeProjects[0]);
+  };
+
+  const toggleEditProject = (project: Project) => {
+    setSelectedProject(project);
     setEditModal([true, true]);
   };
 
@@ -72,6 +89,7 @@ const App = () => {
     withRecent && handleOpenFile(path[0]);
     setWithRecent(false);
     setConfirmClose(false);
+    resetParseError();
     setPath(['']);
   };
 
@@ -80,9 +98,12 @@ const App = () => {
     const storeProjects = state.projectReducer.projects;
     const storeFuncs = state.functionReducer.addressSpaces;
     const storeBlocks = state.blockReducer.blocks;
-    const storeRegs = state.registerReducer.registers;
-    const storeFields = state.fieldReducer.fields;
+    let storeRegs = cloneDeep(state.registerReducer.registers);
+    let storeFields = cloneDeep(state.fieldReducer.fields);
     const storeEVS = state.enumeratedValueReducer.enumeratedValues;
+
+    storeRegs.forEach((reg: Register) => (reg.access = accessFormater(reg.access as Access, null) as string));
+    storeFields.forEach((field: Field) => (field.access = accessFormater(field.access as Access, null) as string));
 
     const data = {
       project: storeProjects[0],
@@ -114,13 +135,24 @@ const App = () => {
         if (result.canceled === false) {
           // Warning: This feature don't set the state path it's just an "export"
           // Think of this as just a "save here" - Kisses Sascha
-
           handleSaveFile(result.filePaths[0]);
         }
       })
       .catch((err) => {
         console.log(err);
       });
+  };
+
+  const resetParseError = () => {
+    setIsLoading(false);
+    setIsError([false, '']);
+    setShowEnterAnim(false);
+  };
+
+  const handleDropError = (error: string) => {
+    setShowEnterAnim(false);
+    setIsLoading(true);
+    setIsError([true, error]);
   };
 
   useEffect(() => {
@@ -145,25 +177,32 @@ const App = () => {
     });
 
     electron.ipcRenderer.on('mm-edit-project', (event, arg) => {
-      handleEditProject();
+      fetchProject(toggleEditProject);
     });
 
     electron.ipcRenderer.on('add-parsed-items', (evt, data) => {
+      resetParseError();
       setEngineMode(true);
       menuItemsEnabler(true);
       const project = fetchItems(data);
+      electron.remote.app.addRecentDocument(project.filePath);
       setElectronTitle(`Xactron - ${project.projectName} - ${project.filePath}`);
+    });
+
+    electron.ipcRenderer.on('parse-error', (evt, data) => {
+      setIsError([true, data]);
     });
 
     electron.ipcRenderer.on('open-recent-file', (event, data) => {
       const state = store.getState();
       const storeProjects = state.projectReducer.projects;
       setWithRecent(true);
-      console.log(storeProjects.length);
       if (storeProjects.length >= 1) {
         setPath([data]);
         setConfirmClose(true);
+        resetParseError();
       } else {
+        resetParseError();
         handleOpenFile(data);
       }
     });
@@ -178,20 +217,21 @@ const App = () => {
           setEngine={() => setEngineMode(!engineMode)}
           editMode={false}
         />
+        <LoadingModal open={isLoading} error={isError[1] as string} setOpen={() => resetParseError()} />
 
-        <div className="select-none flex flex-col justify-center items-center min-h-screen bg-gradient-to-br from-blueGray-900 to-blueGray-700 dark:from-gray-900 dark:to-gray-700 min-w-screen space-y-20 ">
-          <div className="text-8xl font-extrabold">
-            <h1 className="text-white antialiased ">
-              Xactron<span className="text-red-400 animate-bounce">.</span>
-            </h1>
-            <div className="flex flex-row text-right justify-end">
-              <span className="text-sm font-bold text-gray-200 pr-2 antialiased">by</span>{' '}
-              <img className="w-32 object-contain select-none pointer-events-none" src="/assets/thales.png" />
+        <div className="select-none flex min-h-screen bg-gradient-to-br from-blueGray-900 to-blueGray-700 dark:from-gray-900 dark:to-gray-700 min-w-screen px-12 space-y-20">
+          <div className="justify-center flex flex-col flex-auto items-center">
+            <div className="text-8xl font-extrabold pt-20">
+              <h1 className="text-white antialiased ">
+                Xactron<span className="text-red-400">.</span>
+              </h1>
+
+              <div className="flex flex-row flex-auto text-right justify-end">
+                <span className="text-sm font-bold text-gray-200 pr-2 antialiased">by</span>{' '}
+                <img className="w-32 object-contain select-none pointer-events-none" src="static://static/thales.png" />
+              </div>
             </div>
-          </div>
-
-          <div className="justify-center flex flex-col items-center ">
-            <div className="space-x-5">
+            <div className="space-x-5 flex-grow-0 mt-8">
               <Button
                 autoSize={false}
                 color="transparent backdrop-filter backdrop-blur-xl backdrop-brightness-75"
@@ -209,31 +249,37 @@ const App = () => {
                 text="Create"
               />
             </div>
-
-            <div className="mt-10 text-blueGray-300 text-md w-96 justify-center flex flex-col rounded-2xl backdrop-filter backdrop-blur-xl backdrop-brightness-75 py-3 px-6">
-              <div className="flex justify-between  items-center">
-                <h3 className="text-white font-medium text-lg mb-2 tracking-wide">Open Recents</h3>
-                <p className="hover:text-blueGray-400 text-xs mb-2 hover:underline tracking-wider cursor-pointer">
-                  clear
-                </p>
-              </div>
-
-              <a className="hover:text-blueGray-400 font-light duration-200 cursor-pointer">
-                link/test/test/file.xml - Project
-              </a>
-              <a className="hover:text-blueGray-400 font-light duration-200 cursor-pointer">
-                link/test/test/file.xml - Project
-              </a>
-              <a className="hover:text-blueGray-400 font-light duration-200 cursor-pointer">
-                link/test/test/file.xml - Project
-              </a>
-            </div>
+            <Dropzone
+              accept={'.xml'}
+              multiple={false}
+              onDragEnter={() => setShowEnterAnim(true)}
+              onDragLeave={() => setShowEnterAnim(false)}
+              onDropAccepted={(acceptedFiles) => handleOpenFile(acceptedFiles[0].path)}
+              onDropRejected={(rejection) => handleDropError(rejection[0].errors[0].message)}
+            >
+              {({ getRootProps, getInputProps }) => (
+                <div
+                  className={`mt-10 flex items-center flex-grow min-h-96 mb-16 cursor-pointer text-blueGray-300 border ${
+                    !showEnterAnim ? 'shadow-neon' : 'shadow-greenNeon'
+                  } text-md w-full justify-center rounded-xl backdrop-filter backdrop-blur-2xl backdrop-brightness-75 py-3 px-6`}
+                  {...getRootProps()}
+                >
+                  <input {...getInputProps()} />
+                  <div className="h-full text-center items-center text-white font-light text-md space-y-10">
+                    {!showEnterAnim && <ArrowDownIcon className="h-12 w-12 mx-auto animate-bounce text-gray-200" />}
+                    <p className="font-light text-md">
+                      Drag 'n' drop an IP-XACT file (.xml) here, or click to select file
+                    </p>
+                  </div>
+                </div>
+              )}
+            </Dropzone>
           </div>
         </div>
       </Transition>
 
       <Transition show={engineMode}>
-        <EnginePage />
+        {engineMode && <EnginePage />}
         <CreateModal
           open={editModal[0]}
           setOpen={() => setEditModal([!editModal[0], editModal[1]])}
@@ -258,4 +304,6 @@ const App = () => {
   );
 };
 
-export default hot(module)(App);
+// ONLY IN DEV MODE ABORT IN PRODUCTION !!
+// export default hot(module)(App);
+export default App;

@@ -15,7 +15,6 @@ const fieldReducer = (state: FieldState = initialFieldState, action: FAction): F
     case actionTypes.ADD_FIELD:
       if ('field' in action) {
         const newField: Field = action.field;
-        console.log(newField)
         return {
           ...state,
           fields: state.fields.concat(newField),

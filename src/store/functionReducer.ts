@@ -23,7 +23,6 @@ const functionReducer = (
     case actionTypes.UPDATE_FUNCTION:
       if ('addressSpace' in action) {
         const updatedAddressSpace: AddressSpace = action.addressSpace;
-        console.log('ADDRESS ACTION', updatedAddressSpace);
         const newState = state.addressSpaces.map((func) => {
           if (func.id === updatedAddressSpace.id) {
             (func.name = updatedAddressSpace.name),

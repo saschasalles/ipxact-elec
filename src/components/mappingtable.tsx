@@ -59,52 +59,52 @@ type MappingTableProps = {
           <div className="py-2 align-middle sm:px-6 lg:px-8 ">
             
             <div className={`overflow-x-auto h-full h-75 mx-4 mt-2 top-0 bg-blueGray-700 dark:bg-black rounded-xl`} >
-              <table className="table-auto w-full">
+              <table className="border-separate table-auto w-full">
                 <thead>
                   <tr className="bg-blueGray-600 w-full rounded-xl">
                     {props.selection &&
                     <th
                       onClick={onSelectAllClick}
                       scope="col"
-                      className="bg-blueGray-600 dark:bg-gray-900 hover:text-red-300 shadow-md select-none text-white w-min px-2 py-3 text-center text-sm font-medium tracking-tight sticky top-0 rounded-tl-xl cursor-pointer"
+                      className="font-semibold bg-blueGray-500 dark:bg-gray-700 uppercase tracking-wider hover:text-red-300 shadow-md select-none text-white w-min px-2 py-3 text-center text-xs sticky top-0 rounded-tl-xl cursor-pointer"
                     >
                       Selected
                     </th>
                     }
                     <th
                       scope="col"
-                      className={`bg-blueGray-600 dark:bg-gray-900 shadow-md px-6 py-3 text-left select-none text-sm font-medium text-white tracking-tight sticky top-0 ${!props.selection && "rounded-tl-xl"}`}
+                      className={`font-semibold bg-blueGray-500 dark:bg-gray-700 uppercase tracking-wider shadow-md px-6 py-3 text-left select-none text-xs text-white sticky top-0 ${!props.selection && "rounded-tl-xl"}`}
                     >
                       Function
                     </th>
                     <th
                       scope="col"
-                      className="bg-blueGray-600 dark:bg-gray-900 shadow-md px-6 py-3 text-left select-none text-sm font-medium text-white tracking-tight sticky top-0 "
+                      className="font-semibold bg-blueGray-500 dark:bg-gray-700 uppercase tracking-wider shadow-md px-6 py-3 text-left select-none text-xs text-white sticky top-0 "
                     >
                       Base Address
                     </th>
                     <th
                       scope="col"
-                      className="bg-blueGray-600 dark:bg-gray-900 shadow-md px-6 py-3 text-left select-none text-sm font-medium  text-white tracking-tight sticky top-0"
+                      className="font-semibold bg-blueGray-500 dark:bg-gray-700 uppercase tracking-wider shadow-md px-6 py-3 text-left select-none text-xs text-white sticky top-0"
                     >
                       Local Address
                     </th>
                     <th
                       scope="col"
-                      className="bg-blueGray-600 dark:bg-gray-900 shadow-md px-6 py-3 text-left select-none text-sm font-medium text-white tracking-tight sticky top-0"
+                      className="font-semibold bg-blueGray-500 dark:bg-gray-700 uppercase tracking-wider shadow-md px-6 py-3 text-left select-none text-xs text-white sticky top-0"
                     >
                       <span>Register</span> - <span className="text-sky-300">Block</span>
                     </th>
                     <th
                       scope="col"
-                      className="bg-blueGray-600 dark:bg-gray-900 shadow-md px-6 w-2/5 py-3 select-none text-left text-sm font-medium text-white tracking-tight sticky top-0 rounded-tr-xl"
+                      className="font-semibold bg-blueGray-500 dark:bg-gray-700 uppercase tracking-wider shadow-md px-6 w-2/5 py-3 select-none text-left text-xs text-white sticky top-0 rounded-tr-xl"
                     >
                       Description
                     </th>
                   </tr>
                 </thead>
                 
-                <tbody className={`bg-blueGray-600 dark:bg-gray-800 max-h-full h-full overflow-y-scroll divide-y divide-blueGray-500 dark:divide-gray-600`}>
+                <tbody className={`bg-blueGray-600 dark:bg-gray-800 max-h-full h-full overflow-y-scroll divide-blueGray-500 dark:divide-gray-600`}>
                   {dataToDisplay.map((rowData, idx) => (
                     <MappingTableRow 
                       key={idx}

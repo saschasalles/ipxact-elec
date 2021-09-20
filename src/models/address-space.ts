@@ -1,9 +1,8 @@
 import { Register } from './register';
-import { RegisterState } from './state';
-import { useSelector, shallowEqual } from 'react-redux';
+
 import { store } from '../store/store';
 import { addFunction, removeFunctions as removeFuncsAction } from '../store/functionActions';
-import { BlockList } from 'net';
+
 
 export class AddressSpace {
   private _id: string;

@@ -41,7 +41,7 @@ export const MappingTableRow = (props: MappingTableRowProps) => {
         <td
           className={`${
             props.rounded && 'rounded-bl-xl'
-          } text-center px-6 py-4 whitespace-nowrap text-sm font-medium text-white border-r border-blueGray-500 dark:border-gray-600`}
+          } text-center px-6 py-4 whitespace-nowrap text-sm font-medium text-white`}
         >
           {props.rowData.selected && (
             <CheckCircleIcon className="md:ml-2 lg:ml-3 xl:ml-4 ml-2 h-5 w-5 text-red-400 group-hover:text-white " />
@@ -51,20 +51,20 @@ export const MappingTableRow = (props: MappingTableRowProps) => {
       <td
         className={`${
           !props.selection && props.rounded && 'rounded-bl-xl'
-        } px-6 py-4 whitespace-nowrap text-sm font-semibold text-white border-r border-blueGray-500 dark:border-gray-600`}
+        } px-6 py-4 whitespace-nowrap text-sm font-semibold text-white`}
       >
         {props.rowData.functionName}
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-100 border-r border-blueGray-500 dark:border-gray-600">
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-100">
         {'0x' + props.rowData.baseAddress.toString(16)}
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-100 border-r border-blueGray-500 dark:border-gray-600">
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-100">
         {props.rowData.localAddress != null && '0x' + props.rowData.localAddress.toString(16)}
       </td>
       <td
         className={`${
           props.rowData.registerId ? 'text-gray-100' : 'text-sky-300'
-        } px-6 py-4 whitespace-nowrap font-semibold text-sm border-r border-blueGray-500 dark:border-gray-600`}
+        } px-6 py-4 whitespace-nowrap font-semibold text-sm`}
       >
         {props.rowData.registerId ? props.rowData?.registerName : props.rowData?.blockName}
       </td>

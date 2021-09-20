@@ -67,18 +67,16 @@ const CreateModal = (props: CreateModalProps) => {
     resolver: yupResolver(schema),
   });
 
-  useEffect(() => {
-    console.log(props.projectToEdit)
-  }, [])
-
   const onSubmit = (data: ICreateFormInputs) => {
+    console.log('submit');
+    console.log('1', data);
     props.editMode ? updateProj(data) : createFile(data);
   };
 
   const updateProj = (data: ICreateFormInputs): void | Promise<void> => {
     menuItemsEnabler(true);
+    console.log('2', data);
     const projectToEdit = props.projectToEdit;
-    projectToEdit.fileName = data.fileName;
     projectToEdit.addressBits = data.addressBits;
     projectToEdit.projectName = data.projectName;
     projectToEdit.company = data.company;
@@ -171,26 +169,28 @@ const CreateModal = (props: CreateModalProps) => {
               </div>
               <div className="text-left px-3 w-full">
                 <Dialog.Title as="h3" className="text-xl leading-6 text-center font-medium text-white">
-                  {props.editMode ? "Edit" : "New"} Project
+                  {props.editMode ? 'Edit' : 'New'} Project
                 </Dialog.Title>
 
                 <div className="mt-1">
                   <form className="space-y-2" onSubmit={handleSubmit(onSubmit)}>
-                    <div className="mt-4">
-                      <label htmlFor="fileName" className="block text-sm font-medium text-white">
-                        XML File Name{' '}
-                        <span className="text-indigo-300">{errors.fileName && ' • ' + errors.fileName.message}</span>
-                      </label>
-                      <div className="mt-1">
-                        <input
-                          {...register('fileName', { required: true })}
-                          type="text"
-                          placeholder="Ex: myfile"
-                          defaultValue={props.editMode ? props.projectToEdit?.fileName : ""}
-                          className="appearance-none block w-full px-3 py-2 border bg-blueGray-600 border-blueGray-600 dark:bg-gray-700 dark:border-transparent dark:placeholder-gray-300  text-white rounded-lg placeholder-blueGray-400 focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm"
-                        />
+                
+                      <div className={`mt-4 ${props.editMode && "invisible hidden"}`}>
+                        <label htmlFor="fileName" className="block text-sm font-medium text-white">
+                          XML File Name{' '}
+                          <span className="text-indigo-300">{errors.fileName && ' • ' + errors.fileName.message}</span>
+                        </label>
+                        <div className="mt-1">
+                          <input
+                            {...register('fileName', { required: true })}
+                            type="text"
+                            defaultValue={props.editMode ? props.projectToEdit?.fileName : ''}
+                            placeholder="Ex: myfile"
+                            className="appearance-none block w-full px-3 py-2 border bg-blueGray-600 border-blueGray-600 dark:bg-gray-700 dark:border-transparent dark:placeholder-gray-300  text-white rounded-lg placeholder-blueGray-400 focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm"
+                          />
+                        </div>
                       </div>
-                    </div>
+  
 
                     <div>
                       <label htmlFor="addressBits" className="block text-sm font-medium text-white">
@@ -204,7 +204,7 @@ const CreateModal = (props: CreateModalProps) => {
                           {...register('addressBits', { required: true })}
                           type="text"
                           placeholder="32"
-                          defaultValue={props.editMode ? props.projectToEdit?.addressBits : ""}
+                          defaultValue={props.editMode ? props.projectToEdit?.addressBits : ''}
                           className="appearance-none block w-full px-3 py-2 border bg-blueGray-600 border-blueGray-600 dark:bg-gray-700 dark:border-transparent dark:placeholder-gray-300  text-white rounded-lg placeholder-blueGray-400 focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm"
                         />
                       </div>
@@ -212,12 +212,14 @@ const CreateModal = (props: CreateModalProps) => {
 
                     <div>
                       <label htmlFor="company" className="block text-sm font-medium text-white">
-                        Company{' '}
+                        Company
                         <span className="text-indigo-300">{errors.company && ' • ' + errors.company.message}</span>
                       </label>
                       <div className="mt-1">
                         <select
-                          {...register('company')}
+                          {...register('company', {
+                            value: props.editMode ? props.projectToEdit?.company : ''
+                          })}
                           className={
                             'mt-1 py-2 block w-full pl-3 pr-6 text-base border bg-blueGray-600 border-blueGray-600 text-white rounded-lg placeholder-blueGray-400 dark:bg-gray-700 dark:border-transparent dark:placeholder-gray-300  focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm'
                           }
@@ -240,7 +242,7 @@ const CreateModal = (props: CreateModalProps) => {
                         <input
                           {...register('projectName', { required: true })}
                           placeholder="project_name"
-                          defaultValue={props.editMode ? props.projectToEdit?.projectName : ""}
+                          defaultValue={props.editMode ? props.projectToEdit?.projectName : ''}
                           className="appearance-none mt-1 py-2 block w-full pl-3 pr-6 text-base border-2 bg-blueGray-600 border-blueGray-600 dark:bg-gray-700 dark:border-transparent dark:placeholder-gray-300  text-white rounded-lg placeholder-blueGray-400 focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm"
                         />
                       </div>
@@ -257,7 +259,7 @@ const CreateModal = (props: CreateModalProps) => {
                             required: false,
                           })}
                           placeholder="Description"
-                          defaultValue={props.editMode ? props.projectToEdit?.description : ""}
+                          defaultValue={props.editMode ? props.projectToEdit?.description : ''}
                           className="appearance-none block w-full px-3 py-2 max-h-28 disabled:opacity-75 border bg-blueGray-600 border-blueGray-600 dark:bg-gray-700 dark:border-transparent dark:placeholder-gray-300  text-white rounded-lg placeholder-blueGray-400 focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm"
                         />
                       </div>
@@ -273,21 +275,19 @@ const CreateModal = (props: CreateModalProps) => {
                           {...register('version', { required: true })}
                           type="text"
                           placeholder="1.0"
-                          defaultValue={props.editMode ? props.projectToEdit?.version : ""}
+                          defaultValue={props.editMode ? props.projectToEdit?.version : ''}
                           className="appearance-none block w-full px-3 py-2 border bg-blueGray-600 border-blueGray-600 dark:bg-gray-700 dark:border-transparent dark:placeholder-gray-300  text-white rounded-lg placeholder-blueGray-400 focus:outline-none focus:ring-sky-400 focus:border-sky-400 sm:text-sm"
                         />
                       </div>
                     </div>
 
                     <div className="mt-2 pt-3 flex justify-end">
-                      <div>
-                        <button
-                          type="submit"
-                          className={`w-full inline-flex justify-center rounded-lg px-4 py-2 bg-blueGray-400 dark:bg-emerald-500 bg-opacity-50 text-base font-medium text-white active:bg-opacity-50 duration-300 transform-gpu active:scale-95 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm`}
-                        >
-                          {props.editMode ? "Edit" : "Create"}
-                        </button>
-                      </div>
+                      <button
+                        type="submit"
+                        className={`inline-flex justify-center rounded-lg px-4 py-2 bg-blueGray-400 dark:bg-emerald-500 bg-opacity-50 text-base font-medium text-white active:bg-opacity-50 duration-300 transform-gpu active:scale-95 focus:outline-none w-auto`}
+                      >
+                        {props.editMode ? 'Edit' : 'Create'}
+                      </button>
                     </div>
                   </form>
                 </div>
