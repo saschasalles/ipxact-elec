@@ -1,8 +1,6 @@
 import { app, BrowserWindow, Menu, ipcMain, session } from 'electron';
-import { fstat } from 'fs';
-import { platform } from 'os';
 import path from 'path';
-import { StringSchema } from 'yup';
+import { ExportType } from "./models/export-type"
 
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 
@@ -12,7 +10,11 @@ if (require('electron-squirrel-startup')) {
 }
 
 const isMac = process.platform === 'darwin';
-const globalRessourcePath = path.join(app.getAppPath(), '.webpack/renderer', 'static/decoder/mac/parser');
+const platformStr = isMac ? "mac" : "win32"
+const globalParserPath = path.join(app.getAppPath(), '.webpack/renderer', `static/decoder/${platformStr}/parser${!isMac ? ".exe" : ""}`);
+const globalExportVHDLPath = path.join(app.getAppPath(), '.webpack/renderer', `static/exporters/${platformStr}/exportVHDL/export_vhdl${!isMac ? ".exe" : ""}`);
+const globalExportExcelPath = path.join(app.getAppPath(), '.webpack/renderer', `static/exporters/${platformStr}/exportExcel${!isMac ? ".exe" : ""}`);
+const globalExportCPath = path.join(app.getAppPath(), '.webpack/renderer', `static/exporters/${platformStr}/exportC${!isMac ? ".exe" : ""}`);
 
 const createWindow = (): BrowserWindow => {
   // and load the index.html of the app.
@@ -130,8 +132,8 @@ ipcMain.on('show-bk-context-menu', (event) => {
 
 const createMenu = (): Electron.MenuItemConstructorOptions[] => {
   const templateMenu: Electron.MenuItemConstructorOptions[] = [
-    isMac && {
-      label: 'Xactron',
+    {
+      label: isMac ? 'Xactron' : 'Settings',
       submenu: [
         {
           label: 'Toggle DevTools',
@@ -244,6 +246,9 @@ const createMenu = (): Electron.MenuItemConstructorOptions[] => {
               enabled: false,
               label: 'VHDL',
               accelerator: isMac ? 'Cmd+Alt+V' : 'Ctrl+Alt+V',
+              click: () => {
+                BrowserWindow.getFocusedWindow().webContents.send('mm-export-vhdl');
+              },
             },
             {
               id: 'export-excel',
@@ -273,7 +278,8 @@ app.on('ready', () => {
     const fileUrl = request.url.replace('static://', '');
     const filePath = path.join(app.getAppPath(), '.webpack/renderer', fileUrl);
     callback(filePath);
-    verifyAccess(globalRessourcePath);
+    verifyAccess(globalParserPath);
+    verifyAccess(globalExportVHDLPath);
   });
 
   if (BrowserWindow.getAllWindows().length === 0) {
@@ -312,10 +318,21 @@ app.on('ready', () => {
     parse(options, true);
   });
 
+  ipcMain.on('export-VHDL', async (event, args) => {
+    const stringified = JSON.stringify(args[0]);
+    let options = {
+      args: [args[1], stringified]
+    }
+
+    handleExport(ExportType.VHDL, options)
+    
+    // TODO Export on Python
+  })
+
   const parse = (options: any, write: boolean) => {
     try {
       var execFile = require('child_process').execFile;
-      execFile(globalRessourcePath, options.args, function (err: Error, results: any) {
+      execFile(globalParserPath, options.args, function (err: Error, results: any) {
         if (err) throw BrowserWindow.getAllWindows()[0].webContents.send('parse-error', err.message);
         if (write == false) {
           const strRes = results.toString();
@@ -332,6 +349,24 @@ app.on('ready', () => {
       BrowserWindow.getAllWindows()[0].webContents.send('parse-error', err);
     }
   };
+
+  const handleExport = (exportType: ExportType, options: any) => {
+    switch (exportType) {
+      case ExportType.C:
+        break;
+      case ExportType.VHDL:
+        var execFile = require('child_process').execFile;
+        execFile(globalExportVHDLPath, options.args, function (err: Error, results: any) {
+          if (err) throw err;
+        });
+        break;
+      case ExportType.Excel:
+        break;
+      default:
+        break;
+    }
+
+  }
 });
 
 const verifyAccess = (filePath: string) => {

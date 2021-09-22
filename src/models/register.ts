@@ -453,7 +453,6 @@ export class Register {
       }
       reg.duplicateNb += nbDuplicate
       store.dispatch(updateRegister(reg));
-      console.log("when dup", reg)
     }
 
   }

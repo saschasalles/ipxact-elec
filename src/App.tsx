@@ -19,9 +19,11 @@ import { accessFormater } from './helpers/ipxact-helper';
 import { Register } from './models/register';
 import { Field } from './models/field';
 import { Access } from './models/access';
+import { ExportType } from "./models/export-type";
 import { cloneDeep } from 'lodash';
 
 const electron = window.require('electron');
+
 
 const App = () => {
   const [engineMode, setEngineMode] = useState(false);
@@ -93,7 +95,7 @@ const App = () => {
     setPath(['']);
   };
 
-  const handleSaveFile = (customPath?: string) => {
+  const getData = (): any => {
     const state = store.getState();
     const storeProjects = state.projectReducer.projects;
     const storeFuncs = state.functionReducer.addressSpaces;
@@ -113,7 +115,43 @@ const App = () => {
       fields: storeFields,
       evs: storeEVS,
     };
+    return data;
+  }
 
+  const handleExport = (exportType: ExportType) => {
+    const dialog = electron.remote.dialog;
+    dialog
+      .showOpenDialog(electron.remote.getCurrentWindow(), {
+        properties: ['openDirectory'],
+      })
+      .then((result) => {
+        if (result.canceled === false) {
+          const data = getData()
+          const dataToTransfert = [data, result.filePaths[0]]
+          switch (exportType) {
+            case ExportType.VHDL:
+              electron.ipcRenderer.send('export-VHDL', dataToTransfert);
+              break;
+            case ExportType.C:
+              electron.ipcRenderer.send('export-C', dataToTransfert);
+              break;
+            case ExportType.Excel:
+              electron.ipcRenderer.send('export-Excel', dataToTransfert);
+              break;
+            default:
+              break;
+          }
+        }
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+
+  }
+
+
+  const handleSaveFile = (customPath?: string) => {
+    const data = getData();
     if (customPath != null) {
       const endPath = data.project._filePath.replace(/^.*[\\\/]/, '');
       console.log(endPath);
@@ -180,6 +218,10 @@ const App = () => {
       fetchProject(toggleEditProject);
     });
 
+    electron.ipcRenderer.on('mm-export-vhdl', (event, data) => {
+      handleExport(ExportType.VHDL)
+    })
+
     electron.ipcRenderer.on('add-parsed-items', (evt, data) => {
       resetParseError();
       setEngineMode(true);
@@ -206,6 +248,7 @@ const App = () => {
         handleOpenFile(data);
       }
     });
+
   }, []);
   //
   return (
