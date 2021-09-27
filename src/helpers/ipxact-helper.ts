@@ -90,7 +90,7 @@ export const fetchItems = (data: any): Project => {
           reg.duplicateNb != null ? reg.duplicateNb : 0,
           null,
           [],
-          reg.lastDuplicateIndex
+          reg.lastDuplicateIndex,
         );
 
         fetchedFunc.registers.push(fetchedReg.id);
@@ -101,7 +101,7 @@ export const fetchItems = (data: any): Project => {
               field.id,
               field.parentRegisterId,
               field.name,
-              field.defaultValue != null ? field.defaultValue : 0,
+              field.defaultValue,
               field.description,
               accessFormater(null, field.access) as Access,
               field.bitOffset + field.bitWidth - 1,

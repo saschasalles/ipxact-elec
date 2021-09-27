@@ -11,7 +11,7 @@ if (require('electron-squirrel-startup')) {
 
 const isMac = process.platform === 'darwin';
 const platformStr = isMac ? "mac" : "win32"
-const globalParserPath = path.join(app.getAppPath(), '.webpack/renderer', `static/decoder/${platformStr}/parser${!isMac ? ".exe" : ""}`);
+const globalParserPath = path.join(app.getAppPath(), '.webpack/renderer', `static/decoder/${platformStr}/xactron_parser${!isMac ? ".exe" : ""}`);
 const globalExportVHDLPath = path.join(app.getAppPath(), '.webpack/renderer', `static/exporters/${platformStr}/exportVHDL/export_vhdl${!isMac ? ".exe" : ""}`);
 const globalExportExcelPath = path.join(app.getAppPath(), '.webpack/renderer', `static/exporters/${platformStr}/exportExcel${!isMac ? ".exe" : ""}`);
 const globalExportCPath = path.join(app.getAppPath(), '.webpack/renderer', `static/exporters/${platformStr}/exportC${!isMac ? ".exe" : ""}`);

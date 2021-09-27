@@ -1,4 +1,4 @@
-def write_hexa(value, size):
+def write_hexa(value: str, size):
     # 00FF => 8Ux"00FF"
     # 1 => '1'
     if size == 1:
@@ -429,8 +429,8 @@ def write_register_definition(file, fileInfo, width, register):
         write_indent(file, indent, '/* {} */'.format(register.description))
         write_indent(file, indent, 'constant ' + 'P_{} : T_PARAM_REGISTER := ('.format(register.name).upper())
         write_indent(file, indent * 2, 'addr         => {},'.format(write_hexa(hex(register.addressOffset), int(fileInfo)).upper()))
-        write_indent(file, indent * 2, 'accessWrite  => {},'.format(True if register.access == "write" else False))
-        write_indent(file, indent * 2, 'accessRead   => {},'.format(True if register.access == "read" else False))
+        write_indent(file, indent * 2, 'accessWrite  => {},'.format(True if register.access == "write-only" else False))
+        write_indent(file, indent * 2, 'accessRead   => {},'.format(True if register.access == "read-only" else False))
         write_indent(file, indent * 2, 'defaultValue => {},'.format(write_hexa(hex(register.vendorExtensions.regDefaultValue), int(width)).upper()))
         write_indent(file, indent * 2, 'mask         => {},'.format(write_hexa(hex(register.vendorExtensions.regMask), int(width)).upper()))
         write_indent(file, indent * 2, 'dim          => {},'.format(register.dim))

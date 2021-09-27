@@ -30,7 +30,7 @@ const RegisterTable = (props: RegisterTableProps) => {
 
 
 
-  const onSelectAllClick: React.MouseEventHandler<HTMLTableHeaderCellElement> = (event) => {
+  const onSelectAllClick: React.MouseEventHandler<HTMLTableCellElement> = (event) => {
     setSelectAll(!selectAll);
     handleSelectAll(selectAll);
   };
@@ -83,17 +83,6 @@ const RegisterTable = (props: RegisterTableProps) => {
           });
           deleteFields(selectedFields);
           break;
-        // case 'EV':
-        //   let selectedBks = blocks.filter((bk) => selectedRows.some((matchBk) => bk.id === matchBk.blockId));
-        //   selectedBks.forEach((bk) => {
-        //     let func = funcs.find((f) => bk.parentFunc === f.id);
-        //     func.blocks = func.blocks.filter((b) => b !== bk.id);
-        //     updateFunction(func);
-        //   });
-        //   deleteBks(selectedBks);
-        //   setMappingSelectionMode('DEFAULT');
-        //   break;
-
         default:
           break;
       }

@@ -282,7 +282,7 @@ class XactronParser:
 
 path = sys.argv[1]
 if len(sys.argv) == 2:
-    parser = XactronParser(path, None, None)
+    parser = XactronParser(None, path, None)
     print(parser.jsonify())
 elif len(sys.argv) == 3:
     writer = XactronParser(sys.argv[2], path, True)
