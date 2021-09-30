@@ -42,7 +42,13 @@ export const RegisterTableRow = (props: RegisterTableRowProps) => {
       <td className={`${!props.selection && props.rounded && "rounded-bl-xl"} px-6 py-4 whitespace-nowrap text-sm text-white`}>{props.rowData.databit}</td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-white font-semibold">{props.rowData.fieldName}</td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-100">{props.rowData.size}</td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-100">0x{props.rowData.defaultValue.toString(16)}</td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-100">
+        0x{
+        props
+        .rowData
+        .defaultValue
+        .toString(16)
+        .toUpperCase()}</td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-100">{props.rowData.access}</td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-100">{props.rowData.description}</td>
       <td className={`${props.rounded && 'rounded-br-xl'} px-6 py-4 text-sm font-medium text-white whitespace-pre`}>

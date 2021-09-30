@@ -51,14 +51,12 @@ const FieldModal = (props: FieldModalProps) => {
       regToUpdate.fields.forEach((field) => {
         let fetchedField = storeFields.find((f) => f.id === field);
         if (fetchedField != null) {
-          value += fetchedField.defaultValue * Math.pow(2, fetchedField.posl);
-          console.log('Value', value);
-          regToUpdate.defaultValue += value;
-          fetchedField.access === Access.Write &&
-            (mask += Math.pow(2, fetchedField.posh + 1) - Math.pow(2, fetchedField.posl));
+          value += parseInt(fetchedField.defaultValue.toString(10)) * Math.pow(2, fetchedField.posl);
+          fetchedField.access === Access.Write && (mask += Math.pow(2, fetchedField.posh + 1) - Math.pow(2, fetchedField.posl));
           regToUpdate.mask = mask;
         }
       });
+      regToUpdate.defaultValue = value;
       updateRegAction(regToUpdate);
     }
   }, [storeFields]);

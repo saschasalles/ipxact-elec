@@ -1,10 +1,11 @@
-def write_hexa(value: str, size):
-    # 00FF => 8Ux"00FF"
+def write_hexa(value, size):
+    print(value, size)
+    # 0xff => 8Ux"00FF"
     # 1 => '1'
     if size == 1:
         return "'{}'".format(int(value[-1], 16))
     else:
-        return '{}Ux"'.format(size) + '{:0{padding}x}'.format(int(value, 16), padding=int(size/4)) + '"'
+        return '{}Ux"'.format(size) + '{:0{padding}x}'.format(int(value,16),padding=int(size/4)) + '"'
 
 
 def write_indent(file, indent, text, comment=''):
@@ -134,11 +135,11 @@ begin
         add_separator(file, 6)
         if register.dim > 1:
             write_indent(
-                file, 6, "for i in 0 to {} loop".format(register.dim-1))
+                file, 6, "for i in 0 to {} loop".format(register.dim - 1))
             write_indent(file, 8, "if (apb_from_master.paddr = std_logic_vector(unsigned(P_{0}.addr) + to_unsigned(to_integer(i * unsigned(P_{0}.dimOffset)), {1}))) and (apb_from_master.psel = '1') and (apb_from_master.pwrite = '1') and (apb_from_master.penable = '1') then".format(
                 register.name.upper(), addressSpace.width))
             write_indent(file, 10, "write_out_of_range := false;")
-            if register.access == "write":
+            if register.access == "write-only":
                 write_indent(file, 10, "{0}_records_to_array(reg_read.{0},i, temp);".format(
                     register.name.lower()))
                 write_indent(file, 10, "temp := (apb_from_master.pwdata and P_{0}.mask) or (temp and not (P_{0}.mask));".format(
@@ -170,7 +171,7 @@ begin
             write_indent(file, 6, "if (apb_from_master.paddr = P_{}.addr) and (apb_from_master.psel = '1') and (apb_from_master.pwrite = '1') and (apb_from_master.penable = '1') then".format(
                 register.name.upper()))
             write_indent(file, 8, "write_out_of_range := false;")
-            if register.access == "write":
+            if register.access == "write-only":
                 write_indent(file, 8, "{0}_records_to_array(reg_read.{0}, temp);".format(
                     register.name.lower()))
                 write_indent(file, 8, "temp := (apb_from_master.pwdata and P_{0}.mask) or (temp and not (P_{0}.mask));".format(
@@ -228,7 +229,7 @@ begin
     file.write('\n' * 2)
 
     for register in addressSpace.register:
-        if register.access == "read":
+        if register.access == "read-only":
             add_separator(file, 8)
             write_indent(
                 file, 8, "--  Lecture du registre {}".format(register.name.upper()))
@@ -390,7 +391,7 @@ def write_register_list(file, addressSpace):
             else:
                 write_indent(file, indent * 2, '{0} => C_{1}_DEFAULT,'.format(
                     register.name.lower(), register.name.upper()))
-    if len(addressSpace.register) > 0:                
+    if len(addressSpace.register) > 0:
         if addressSpace.register[-1].dim > 1:
             if bool(addressSpace.register[-1].vendorExtensions.regIsHidden) == False:
                 write_indent(file, indent * 2, '{0} => C_TAB_{1}_DEFAULT);'.format(
@@ -427,39 +428,54 @@ def write_register_definition(file, fileInfo, width, register):
         #   dimOffset    => "OO10"
         # );
         write_indent(file, indent, '/* {} */'.format(register.description))
-        write_indent(file, indent, 'constant ' + 'P_{} : T_PARAM_REGISTER := ('.format(register.name).upper())
-        write_indent(file, indent * 2, 'addr         => {},'.format(write_hexa(hex(register.addressOffset), int(fileInfo)).upper()))
-        write_indent(file, indent * 2, 'accessWrite  => {},'.format(True if register.access == "write-only" else False))
-        write_indent(file, indent * 2, 'accessRead   => {},'.format(True if register.access == "read-only" else False))
-        write_indent(file, indent * 2, 'defaultValue => {},'.format(write_hexa(hex(register.vendorExtensions.regDefaultValue), int(width)).upper()))
-        write_indent(file, indent * 2, 'mask         => {},'.format(write_hexa(hex(register.vendorExtensions.regMask), int(width)).upper()))
-        write_indent(file, indent * 2, 'dim          => {},'.format(register.dim))
-        write_indent(file, indent * 2, 'dimOffset    => {}'.format(write_hexa(hex(register.vendorExtensions.dimOffset), int(fileInfo)).upper()))
+        write_indent(file, indent, 'constant ' +
+                     'P_{} : T_PARAM_REGISTER := ('.format(register.name).upper())
+        write_indent(file, indent * 2, 'addr         => {},'.format(
+            write_hexa(hex(register.addressOffset), int(fileInfo)).upper()))
+        write_indent(file, indent * 2, 'accessWrite  => {},'.format(
+            True if register.access == "write-only" else False))
+        write_indent(file, indent * 2, 'accessRead   => {},'.format(
+            True if register.access == "read-only" else False))
+        write_indent(file, indent * 2, 'defaultValue => {},'.format(
+            write_hexa(hex(register.vendorExtensions.regDefaultValue), int(width)).upper()))
+        write_indent(file, indent * 2, 'mask         => {},'.format(
+            write_hexa(hex(register.vendorExtensions.regMask), int(width)).upper()))
+        write_indent(file, indent * 2,
+                     'dim          => {},'.format(register.dim))
+        write_indent(file, indent * 2, 'dimOffset    => {}'.format(
+            write_hexa(hex(register.vendorExtensions.dimOffset), int(fileInfo)).upper()))
         write_indent(file, indent, ');')
         file.write('\n')
 
-        write_indent(file, indent, 'type ' + 'T_REG_{} is record'.format(register.name.upper()))
+        write_indent(file, indent, 'type ' +
+                     'T_REG_{} is record'.format(register.name.upper()))
         for field in register.field:
-            posh = field.bitOffset
-            posl = posh + field.bitWidth - 1
+            posl = field.bitOffset
+            posh = posl + field.bitWidth - 1
             if posh == posl:
-                write_indent(file, indent * 2, '{} '.format(field.name.lower()) + ' : std_logic;')
+                write_indent(file, indent * 2,
+                             '{} '.format(field.name.lower()) + ' : std_logic;')
             else:
-                write_indent(file, indent * 2, '{} '.format(field.name.lower()) + ' : std_logic_vector({} downto {});'.format(posh - posl, 0),field.description)
+                write_indent(file, indent * 2, '{} '.format(field.name.lower()) +
+                             ' : std_logic_vector({} downto {});'.format(posh - posl, 0), field.description)
         write_indent(file, indent * 2, 'isModified : boolean;')
         write_indent(file, indent * 2, 'isRead : boolean;')
         write_indent(file, indent * 2, 'isWritten : boolean;')
-        write_indent(file, indent, 'end record ' + 'T_REG_{};'.format(register.name).upper())
+        write_indent(file, indent, 'end record ' +
+                     'T_REG_{};'.format(register.name).upper())
         file.write('\n')
 
         if register.dim > 1:
-            write_indent(file, indent, 'type ' + 'T_TAB_REG_{0} is array(0 to {1}) of T_REG_{0};'.format(register.name.upper(), register.dim - 1))
+            write_indent(file, indent, 'type ' + 'T_TAB_REG_{0} is array(0 to {1}) of T_REG_{0};'.format(
+                register.name.upper(), register.dim - 1))
             file.write('\n')
 
-        write_indent(file, indent, 'constant ' + 'C_{0}_DEFAULT : T_REG_{0} := ('.format(register.name).upper())
+        write_indent(file, indent, 'constant ' +
+                     'C_{0}_DEFAULT : T_REG_{0} := ('.format(register.name).upper())
         for field in register.field:
-            posh = field.bitOffset
-            posl = posh + field.bitWidth - 1
+            posl = field.bitOffset
+            posh = posl + field.bitWidth - 1
+            print("FIELD", field.bitOffset, field.bitWidth, posh, posl, field.value)
             write_indent(file, indent * 2, '{} => {},'.format(field.name.lower(), write_hexa(hex(field.value), posh - posl + 1)), field.description)
         write_indent(file, indent * 2, 'isModified  => false,')
         write_indent(file, indent * 2, 'isRead      => false,')
@@ -467,7 +483,8 @@ def write_register_definition(file, fileInfo, width, register):
         file.write('\n')
 
         if register.dim > 1:
-            write_indent(file, indent, 'constant ' + 'C_TAB_{0}_DEFAULT : T_TAB_REG_{0} := (others => C_{0}_DEFAULT);'.format(register.name.upper()))
+            write_indent(file, indent, 'constant ' +
+                         'C_TAB_{0}_DEFAULT : T_TAB_REG_{0} := (others => C_{0}_DEFAULT);'.format(register.name.upper()))
             file.write('\n')
 
         # -- REG_EXAMPLE fields
@@ -475,47 +492,69 @@ def write_register_definition(file, fileInfo, width, register):
         # subtype REVISION_FIELD2 is natural range 15 downto 8;
         write_indent(file, indent, '-- {} fields'.format(register.name))
         for field in register.field:
-            posh = field.bitOffset
-            posl = posh + field.bitWidth - 1
-            write_indent(file, indent, 'subtype S_{}_F_{} is natural range {} downto {};'.format(register.name.upper(),field.name.upper(), posh, posl), field.description)
+            posl = field.bitOffset
+            posh = posl + field.bitWidth - 1
+            print(posh, posl)
+            write_indent(file, indent, 'subtype S_{}_F_{} is natural range {} downto {};'.format(
+                register.name.upper(), field.name.upper(), posh, posl), field.description)
         file.write('\n')
-
 
         # -- enumerated values for field1 of register REG_EXAMPLE
         # -- constant REG_EXAMPLE_FIELD1_VALUE1 : std_logic_vector(7 downto 0) := x"01"; -- description de la valeur 1
         # -- constant REG_EXAMPLE_FIELD1_VALUE2 : std_logic_vector(7 downto 0) := x"02"; -- description de la valeur 2
         for field in register.field:
-            posh = field.bitOffset
-            posl = posh + field.bitWidth - 1
+            posl = field.bitOffset
+            posh = posl + field.bitWidth - 1
             if len(field.enumeratedValues) != 0:
-                write_indent(file, indent, '-- enumerated values for field {} of register {}'.format(field.name, register.name))
+                write_indent(
+                    file, indent, '-- enumerated values for field {} of register {}'.format(field.name, register.name))
             for evs in field.enumeratedValues:
                 for enum in evs.enumeratedValue:
                     if posh == posl:
-                        write_indent(file, indent, 'constant ' + 'E_{}_F_{}_{}'.format(register.name, field.name, enum.name).upper() + ' : std_logic := {};'.format(write_hexa(hex(enum.value), 1)), enum.description)
+                        write_indent(file, indent, 'constant ' + 'E_{}_F_{}_{}'.format(register.name, field.name,
+                                     enum.name).upper() + ' : std_logic := {};'.format(write_hexa(hex(enum.value), 1)), enum.description)
                     else:
-                        write_indent(file, indent, 'constant ' + 'E_{}_F_{}_{}'.format(register.name, field.name, enum.name).upper() + ' : std_logic_vector({} downto {}) := {};'.format(posh - posl, 0, write_hexa(hex(enum.value), posh - posl + 1)), enum.description)
+                        write_indent(file, indent, 'constant ' + 'E_{}_F_{}_{}'.format(register.name, field.name, enum.name).upper(
+                        ) + ' : std_logic_vector({} downto {}) := {};'.format(posh - posl, 0, write_hexa(hex(enum.value), posh - posl + 1)), enum.description)
 
         if register.dim > 1:
-            write_indent(file, indent, '-- Procédure de conversion du record -> std_logic_vector')
-            write_indent(file, indent, 'procedure {}_records_to_array( '.format(register.name.lower()))
-            write_indent(file, indent * 2, 'signal param_sts : in T_TAB_REG_{};'.format(register.name.upper()))
-            write_indent(file, indent * 2, 'constant index : in integer;'.format(register.name.upper()))
-            write_indent(file, indent * 2, 'variable ctrl_out : out std_logic_vector);')
-            write_indent(file, indent, '-- Procédure de conversion de std_logic_vector -> record')
-            write_indent(file, indent, 'procedure {}_array_to_records( '.format(register.name.lower()))
-            write_indent(file, indent * 2, 'variable param_sts : in std_logic_vector;')
-            write_indent(file, indent * 2, 'signal param_out : out T_TAB_REG_{};'.format(register.name.upper()))
-            write_indent(file, indent * 2, 'constant index : in integer);'.format(register.name.upper()))
+            write_indent(
+                file, indent, '-- Procédure de conversion du record -> std_logic_vector')
+            write_indent(
+                file, indent, 'procedure {}_records_to_array( '.format(register.name.lower()))
+            write_indent(
+                file, indent * 2, 'signal param_sts : in T_TAB_REG_{};'.format(register.name.upper()))
+            write_indent(
+                file, indent * 2, 'constant index : in integer;'.format(register.name.upper()))
+            write_indent(file, indent * 2,
+                         'variable ctrl_out : out std_logic_vector);')
+            write_indent(
+                file, indent, '-- Procédure de conversion de std_logic_vector -> record')
+            write_indent(
+                file, indent, 'procedure {}_array_to_records( '.format(register.name.lower()))
+            write_indent(file, indent * 2,
+                         'variable param_sts : in std_logic_vector;')
+            write_indent(
+                file, indent * 2, 'signal param_out : out T_TAB_REG_{};'.format(register.name.upper()))
+            write_indent(
+                file, indent * 2, 'constant index : in integer);'.format(register.name.upper()))
         else:
-            write_indent(file, indent, '-- Procédure de conversion du record -> std_logic_vector')
-            write_indent(file, indent, 'procedure {}_records_to_array( '.format(register.name.lower()))
-            write_indent(file, indent * 2, 'signal param_sts : in T_REG_{};'.format(register.name.upper()))
-            write_indent(file, indent * 2, 'variable ctrl_out : out std_logic_vector);')
-            write_indent(file, indent, '-- Procédure de conversion de std_logic_vector -> record')
-            write_indent(file, indent, 'procedure {}_array_to_records( '.format(register.name.lower()))
-            write_indent(file, indent * 2, 'variable param_sts : in std_logic_vector;')
-            write_indent(file, indent * 2, 'signal param_out : out T_REG_{});'.format(register.name.upper()))
+            write_indent(
+                file, indent, '-- Procédure de conversion du record -> std_logic_vector')
+            write_indent(
+                file, indent, 'procedure {}_records_to_array( '.format(register.name.lower()))
+            write_indent(
+                file, indent * 2, 'signal param_sts : in T_REG_{};'.format(register.name.upper()))
+            write_indent(file, indent * 2,
+                         'variable ctrl_out : out std_logic_vector);')
+            write_indent(
+                file, indent, '-- Procédure de conversion de std_logic_vector -> record')
+            write_indent(
+                file, indent, 'procedure {}_array_to_records( '.format(register.name.lower()))
+            write_indent(file, indent * 2,
+                         'variable param_sts : in std_logic_vector;')
+            write_indent(
+                file, indent * 2, 'signal param_out : out T_REG_{});'.format(register.name.upper()))
 
         file.write('\n')
 
@@ -524,57 +563,78 @@ def write_procedure_body(file, width, register):
     if bool(register.vendorExtensions.regIsHidden) == False:
         indent = 2
         if register.dim > 1:
-            write_indent(file, indent, 'procedure {}_records_to_array( '.format(register.name.lower()))
-            write_indent(file, indent * 2, 'signal param_sts : in T_TAB_REG_{};'.format(register.name.upper()))
-            write_indent(file, indent * 2, 'constant index : in integer;'.format(register.name.upper()))
-            write_indent(file, indent * 2, 'variable ctrl_out : out std_logic_vector) is')
+            write_indent(
+                file, indent, 'procedure {}_records_to_array( '.format(register.name.lower()))
+            write_indent(
+                file, indent * 2, 'signal param_sts : in T_TAB_REG_{};'.format(register.name.upper()))
+            write_indent(
+                file, indent * 2, 'constant index : in integer;'.format(register.name.upper()))
+            write_indent(file, indent * 2,
+                         'variable ctrl_out : out std_logic_vector) is')
         else:
-            write_indent(file, indent, 'procedure {}_records_to_array( '.format(register.name.lower()))
-            write_indent(file, indent * 2, 'signal param_sts : in T_REG_{};'.format(register.name.upper()))
-            write_indent(file, indent * 2, 'variable ctrl_out : out std_logic_vector) is')
+            write_indent(
+                file, indent, 'procedure {}_records_to_array( '.format(register.name.lower()))
+            write_indent(
+                file, indent * 2, 'signal param_sts : in T_REG_{};'.format(register.name.upper()))
+            write_indent(file, indent * 2,
+                         'variable ctrl_out : out std_logic_vector) is')
         write_indent(file, indent, 'begin')
-        write_indent(file, indent*2, "ctrl_out({0} downto 0) := (others => '0');".format(int(width)-1))
+        write_indent(
+            file, indent*2, "ctrl_out({0} downto 0) := (others => '0');".format(int(width)-1))
 
         for field in register.field:
-            posh = field.bitOffset
-            posl = posh + field.bitWidth - 1
+            posl = field.bitOffset
+            posh = posl + field.bitWidth - 1
             if int(posh) == int(posl):
                 if register.dim > 1:
-                    write_indent(file, indent * 2, 'ctrl_out({0}) := param_sts(index).{1};'.format(posl, field.name.lower()))
+                    write_indent(
+                        file, indent * 2, 'ctrl_out({0}) := param_sts(index).{1};'.format(posl, field.name.lower()))
                 else:
-                    write_indent(file, indent * 2, 'ctrl_out({0}) := param_sts.{1};'.format(posl, field.name.lower()))
+                    write_indent(
+                        file, indent * 2, 'ctrl_out({0}) := param_sts.{1};'.format(posl, field.name.lower()))
             else:
                 if register.dim > 1:
-                    write_indent(file, indent * 2, 'ctrl_out({} downto {}) := param_sts(index).{};'.format(posh, posl, field.name.lower()))
+                    write_indent(file, indent * 2, 'ctrl_out({} downto {}) := param_sts(index).{};'.format(
+                        posh, posl, field.name.lower()))
                 else:
-                    write_indent(file, indent * 2, 'ctrl_out({} downto {}) := param_sts.{};'.format(posh, posl, field.name.lower()))
-        write_indent(file, indent, 'end procedure {}_records_to_array;'.format(register.name.lower()))
+                    write_indent(file, indent * 2, 'ctrl_out({} downto {}) := param_sts.{};'.format(
+                        posh, posl, field.name.lower()))
+        write_indent(file, indent, 'end procedure {}_records_to_array;'.format(
+            register.name.lower()))
         file.write('\n')
 
-
-        write_indent(file, indent, 'procedure {}_array_to_records( '.format(register.name.lower()))
-        write_indent(file, indent * 2, 'variable param_sts : in std_logic_vector;')
+        write_indent(
+            file, indent, 'procedure {}_array_to_records( '.format(register.name.lower()))
+        write_indent(file, indent * 2,
+                     'variable param_sts : in std_logic_vector;')
         if register.dim > 1:
-            write_indent(file, indent * 2, 'signal param_out : out T_TAB_REG_{};'.format(register.name.upper()))
-            write_indent(file, indent * 2, 'constant index : in integer) is'.format(register.name.upper()))
+            write_indent(
+                file, indent * 2, 'signal param_out : out T_TAB_REG_{};'.format(register.name.upper()))
+            write_indent(
+                file, indent * 2, 'constant index : in integer) is'.format(register.name.upper()))
         else:
-            write_indent(file, indent * 2, 'signal param_out : out T_REG_{}) is'.format(register.name.upper()))
+            write_indent(
+                file, indent * 2, 'signal param_out : out T_REG_{}) is'.format(register.name.upper()))
         write_indent(file, indent, 'begin')
 
         for field in register.field:
-            posh = field.bitOffset
-            posl = posh + field.bitWidth - 1
+            posl = field.bitOffset
+            posh = posl + field.bitWidth - 1
             if int(posh) == int(posl):
                 if register.dim > 1:
-                    write_indent(file, indent * 2, 'param_out(index).{} <= param_sts({});'.format(field.name.lower(), posl))
+                    write_indent(
+                        file, indent * 2, 'param_out(index).{} <= param_sts({});'.format(field.name.lower(), posl))
                 else:
-                    write_indent(file, indent * 2, 'param_out.{} <= param_sts({});'.format(field.name.lower(), posl))
+                    write_indent(
+                        file, indent * 2, 'param_out.{} <= param_sts({});'.format(field.name.lower(), posl))
             else:
                 if register.dim > 1:
-                    write_indent(file, indent * 2, 'param_out(index).{} <= param_sts({} downto {});'.format(field.name.lower(), posh, posl))
+                    write_indent(file, indent * 2, 'param_out(index).{} <= param_sts({} downto {});'.format(
+                        field.name.lower(), posh, posl))
                 else:
-                    write_indent(file, indent * 2, 'param_out.{} <= param_sts({} downto {});'.format(field.name.lower(), posh, posl))
-        write_indent(file, indent, 'end procedure {}_array_to_records;'.format(register.name.lower()))
+                    write_indent(file, indent * 2, 'param_out.{} <= param_sts({} downto {});'.format(
+                        field.name.lower(), posh, posl))
+        write_indent(file, indent, 'end procedure {}_array_to_records;'.format(
+            register.name.lower()))
 
         file.write('\n')
-

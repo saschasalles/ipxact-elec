@@ -25,7 +25,7 @@ class XactronParser:
             self.parse(newData)
 
         else:
-        # Read Mode
+            # Read Mode
             self.component.load(path)
             self.memoryMaps = self.component.memoryMaps.memoryMap
             self.file_info()
@@ -54,15 +54,6 @@ class XactronParser:
             self.component.vendor = project['_company']
             self.component.library = project['_projectName']
 
-
-    def writeComponent(self):
-        pass
-        # if self.path is not None:
-        #     path = self.path
-        #     f = open(path, "w")
-        #     component.write(f)
-        #     f.close()
-
     def parse(self, data=None):
         if data == None:
             # Read Mode
@@ -87,10 +78,11 @@ class XactronParser:
             self.memoryMap.addressUnitBits = data['project']['_addressBits']
             self.component.memoryMaps.memoryMap.append(self.memoryMap)
             self.w_funcs(data)
-            # Write 
-            if self.writeMode == True:
-                self.writeComponent()
-            
+            # Write
+            if self.writeMode and self.path != None:
+                f = open(self.path, "w")
+                self.component.write(f)
+                f.close()
 
     def w_funcs(self, data):
         addressBlocks = []
@@ -217,11 +209,11 @@ class XactronParser:
                 if field['_parentRegID'] == regId:
                     newField = ipyxact.ipyxact.Field()
                     newField.name = field['_name']
+                    newField.value = field['_defaultValue']
                     newField.description = field['_description']
                     newField.access = field['_access']
                     newField.bitOffset = field['_posl']
                     newField.bitWidth = field['_posh'] - field['_posl'] + 1
-                    newField.value = field['_defaultValue']
                     vendExt = ipyxact.ipyxact.VendorExtensions()
                     vendExt.fieldId = field['_id']
                     newField.vendorExtensions = vendExt
@@ -264,7 +256,6 @@ class XactronParser:
             enumeratedValues.enumeratedValue = evs
             field.enumeratedValues = [enumeratedValues]
 
-
     def jsonify(self):
         dic = {
             "project": self.project,
@@ -275,15 +266,13 @@ class XactronParser:
             "evs": self.evs
         }
         return json.dumps(dic)
-    
-    # def getComponent(self):
-    #     return self.component
 
 
-path = sys.argv[1]
-if len(sys.argv) == 2:
-    parser = XactronParser(None, path, None)
-    print(parser.jsonify())
-elif len(sys.argv) == 3:
-    writer = XactronParser(sys.argv[2], path, True)
 
+
+# path = sys.argv[1]
+# if len(sys.argv) == 2:
+#     parser = XactronParser(None, path, None)
+#     print(parser.jsonify())
+# elif len(sys.argv) == 3:
+#     writer = XactronParser(sys.argv[2], path, True)

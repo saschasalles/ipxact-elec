@@ -222,6 +222,10 @@ const App = () => {
       handleExport(ExportType.VHDL)
     })
 
+    electron.ipcRenderer.on('mm-export-excel', (event, data) => {
+      handleExport(ExportType.Excel)
+    })
+
     electron.ipcRenderer.on('add-parsed-items', (evt, data) => {
       resetParseError();
       setEngineMode(true);

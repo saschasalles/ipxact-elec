@@ -56,10 +56,23 @@ export const MappingTableRow = (props: MappingTableRowProps) => {
         {props.rowData.functionName}
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-100">
-        {'0x' + props.rowData.baseAddress.toString(16)}
+        {'0x' + 
+        props
+        .rowData
+        .baseAddress
+        .toString(16)
+        .toUpperCase()
+        }
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-100">
-        {props.rowData.localAddress != null && '0x' + props.rowData.localAddress.toString(16)}
+      <td className="px-6 py-4 whitespace-pre text-sm text-gray-100">
+        {!props.rowData.registerId && '0x0\n'}
+        {props.rowData.localAddress != null && 
+        '0x' + 
+        props
+        .rowData
+        .localAddress
+        .toString(16)
+        .toUpperCase()}
       </td>
       <td
         className={`${
@@ -68,7 +81,7 @@ export const MappingTableRow = (props: MappingTableRowProps) => {
       >
         {props.rowData.registerId ? props.rowData?.registerName : props.rowData?.blockName}
       </td>
-      <td className={`${props.rounded && 'rounded-br-xl'} px-6 py-4 whitespace-nowrap text-sm text-gray-100`}>
+      <td className={`${props.rounded && 'rounded-br-xl'} px-6 py-4 whitespace-pre text-sm text-gray-100`}>
         {props.rowData?.description}
       </td>
     </tr>

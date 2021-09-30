@@ -8,7 +8,7 @@ sys.path.append(".")
 class ExportVHDL():
     def __init__(self, path, data):
         self.path = path
-        parser = XactronParser(data, None, False)
+        parser = XactronParser(parseData=data, path=None, writeMode=False)
         self.component = parser.component
         self.memoryMaps = self.component.memoryMaps.memoryMap
 

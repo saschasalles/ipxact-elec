@@ -1,6 +1,7 @@
 import { app, BrowserWindow, Menu, ipcMain, session } from 'electron';
 import path from 'path';
-import { ExportType } from "./models/export-type"
+import { PythonShell } from 'python-shell';
+import { ExportType } from './models/export-type';
 
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 
@@ -10,11 +11,25 @@ if (require('electron-squirrel-startup')) {
 }
 
 const isMac = process.platform === 'darwin';
-const platformStr = isMac ? "mac" : "win32"
-const globalParserPath = path.join(app.getAppPath(), '.webpack/renderer', `static/decoder/${platformStr}/xactron_parser${!isMac ? ".exe" : ""}`);
-const globalExportVHDLPath = path.join(app.getAppPath(), '.webpack/renderer', `static/exporters/${platformStr}/exportVHDL/export_vhdl${!isMac ? ".exe" : ""}`);
-const globalExportExcelPath = path.join(app.getAppPath(), '.webpack/renderer', `static/exporters/${platformStr}/exportExcel${!isMac ? ".exe" : ""}`);
-const globalExportCPath = path.join(app.getAppPath(), '.webpack/renderer', `static/exporters/${platformStr}/exportC${!isMac ? ".exe" : ""}`);
+const platformStr = isMac ? 'mac' : 'win32';
+const globalParserPath = path.join(
+  app.getAppPath(),
+  '.webpack/renderer',
+  `static/decoder/${platformStr}/xactron_parser${!isMac ? '.exe' : ''}`,
+);
+// const globalExportVHDLPath = path.join(app.getAppPath(), '.webpack/renderer', `static/exporters/${platformStr}/exportVHDL/export_vhdl${!isMac ? ".exe" : ""}`);
+const globalExportVHDLPath = path.join(app.getAppPath(), 'src', `python/export_vhdl.py`);
+const globalExportExcelPath = path.join(app.getAppPath(), 'src', `python/export_excel.py`);
+// const globalExportExcelPath = path.join(
+//   app.getAppPath(),
+//   '.webpack/renderer',
+//   `static/exporters/${platformStr}/exportExcel${!isMac ? '.exe' : ''}`,
+// );
+const globalExportCPath = path.join(
+  app.getAppPath(),
+  '.webpack/renderer',
+  `static/exporters/${platformStr}/exportC${!isMac ? '.exe' : ''}`,
+);
 
 const createWindow = (): BrowserWindow => {
   // and load the index.html of the app.
@@ -255,6 +270,9 @@ const createMenu = (): Electron.MenuItemConstructorOptions[] => {
               enabled: false,
               label: 'Excel',
               accelerator: isMac ? 'Cmd+Alt+E' : 'Ctrl+Alt+E',
+              click: () => {
+                BrowserWindow.getFocusedWindow().webContents.send('mm-export-excel');
+              },
             },
             {
               id: 'combine-excel',
@@ -291,7 +309,7 @@ app.on('ready', () => {
   Menu.setApplicationMenu(menu);
 
   // Signals going to front-end
-  
+
   ipcMain.on('parse-xml', async (event, args) => {
     let options = {
       args: [args],
@@ -321,63 +339,88 @@ app.on('ready', () => {
   ipcMain.on('export-VHDL', async (event, args) => {
     const stringified = JSON.stringify(args[0]);
     let options = {
-      args: [args[1], stringified]
-    }
+      args: [args[1], stringified],
+    };
 
-    handleExport(ExportType.VHDL, options)
-    
-    // TODO Export on Python
-  })
+    handleExport(ExportType.VHDL, options);
+  });
+
+  ipcMain.on('export-Excel', async (event, args) => {
+    const stringified = JSON.stringify(args[0]);
+    let options = {
+      args: [args[1], stringified],
+    };
+
+    handleExport(ExportType.Excel, options);
+  });
+
 
   const parse = (options: any, write: boolean) => {
     try {
       var execFile = require('child_process').execFile;
       execFile(globalParserPath, options.args, function (err: Error, results: any) {
+        console.log('PARSE OUT', results);
         if (err) throw BrowserWindow.getAllWindows()[0].webContents.send('parse-error', err.message);
         if (write == false) {
           const strRes = results.toString();
           try {
-            console.log(strRes);
             const data = JSON.parse(strRes);
+            console.log(data);
             BrowserWindow.getAllWindows()[0].webContents.send('add-parsed-items', data);
           } catch (error) {
-            BrowserWindow.getAllWindows()[0].webContents.send('parse-error', error);
+            BrowserWindow.getAllWindows()[0].webContents.send('parse-error', error.message);
           }
         }
       });
     } catch (err) {
-      BrowserWindow.getAllWindows()[0].webContents.send('parse-error', err);
+      BrowserWindow.getAllWindows()[0].webContents.send('parse-error', err.message);
     }
   };
 
   const handleExport = (exportType: ExportType, options: any) => {
     switch (exportType) {
       case ExportType.C:
+        // TODO Export C
+
         break;
       case ExportType.VHDL:
-        var execFile = require('child_process').execFile;
-        execFile(globalExportVHDLPath, options.args, function (err: Error, results: any) {
-          if (err) throw err;
+        const execFile = require('child_process').execFile;
+        
+        PythonShell.run(globalExportVHDLPath, options, function (err, results) {
+          console.log('results: ', results);
+          if (err) throw err;          
         });
-        break;
+
+        // execFile(`${globalExportVHDLPath}`, [options.args], function (err: Error, results: any) {
+        //   console.log(results);
+        //   if (err) throw err;
+        // });
+
+        // execFile(globalExportVHDLPath, options.args, function (err: Error, results: any) {
+        //   console.log(results);
+        //   if (err) throw err;
+        // });
+        // break;
       case ExportType.Excel:
+        PythonShell.run(globalExportExcelPath, options, function (err, results) {
+          console.log('results: ', results);
+          if (err) throw err;          
+        });
+        // var execFile = require('child_process').execFile;
+        // execFile(globalExportExcelPath, options.args, function (err: Error, results: any) {
+        //   if (err) throw err;
+        // });
         break;
       default:
         break;
     }
-
-  }
+  };
 });
 
 const verifyAccess = (filePath: string) => {
   let exec = require('child_process').exec;
   if (isMac) {
     exec(`chmod -R 777 ${filePath}`, function (err: Error, results: any) {
-      if (err) throw err;
-      console.log(results);
-    });
-  } else if (process.platform == 'win32') {
-    exec(`cacls ${filePath} /g everyone:f `, function (err: Error, results: any) {
       if (err) throw err;
       console.log(results);
     });
@@ -394,5 +437,3 @@ app.on('open-file', (event, path) => {
   console.log('PATH', path);
   BrowserWindow.getFocusedWindow().webContents.send('open-recent-file', path);
 });
-
-
