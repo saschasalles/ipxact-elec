@@ -29,9 +29,9 @@ La partie python est aujourd’hui dans un environnement propre (dans `/src/pyth
 ### Installation :
 
 * avoir NodeJS et yarn
-* yarn install (pour installer tous les packages)
-* yarn start (pour lancer l'IHM en dev)
-* yarn package --plateform win32 (pour compiler juste l'IHM)
+* `yarn install` (pour installer tous les packages)
+* `yarn start` (pour lancer l'IHM en dev)
+* `yarn package --plateform win32` (pour compiler juste l'IHM)
 
 * l'`engine python` se trouve dans `src/python`
 * pour compiler l'engine (chaque exporter + parser) copier la sortie de build de cxfreeze dans :
